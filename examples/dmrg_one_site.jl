@@ -5,14 +5,17 @@ using Plots, Printf
 
 N = 50 # number of sites
 d = 2 # physical dim
-D = 10 # bond dim
+D = 60 # bond dim
 
 BC = "PBC"
 E_Bethe = heisen_chain_Bethe(N, BC)
 # generate mpo of N-site PBC heisenberg chain
 mpo = heisen_chain_MPO(N, BC)
 
-# generate random mps
+# mps_rnd = MPS{Float64}(N, d, 20)
+# r2l_LQ!(mps_rnd)
+# DMRG_loop!(mps_rnd, mpo, 2, 1e-12)
+# mps_padding!(mps_rnd, D)
 mps_rnd = MPS{Float64}(N, d, D)
 r2l_LQ!(mps_rnd)
 

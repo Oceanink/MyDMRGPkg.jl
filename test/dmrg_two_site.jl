@@ -66,7 +66,7 @@ end
         markersize=2,
     )
     title!(p1, "Two-site DMRG relative errors, N=$N, D=$D, $BC")
-    title!(p2, "Two-site DMRG truncation errors, N=$N, D=$D, $BC")
+    title!(p2, "Two-site DMRG truncation errors,N=$N,D=$D,$BC")
 
     savefig(p1, "test/output/two_site_relative_errors.png")
     savefig(p2, "test/output/two_site_truncation_errors.png")
