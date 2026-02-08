@@ -27,7 +27,7 @@ function is_right_canonical(mps::MPS; atol::Float64=1e-9)
 end
 
 function mps_fidelity(mps1::MPS, mps2::MPS)::Float64
-    @assert mps1.N = mps2.N
+    @assert mps1.N == mps2.N
     N = mps1.N
     C = ones(1, 1)
 
@@ -38,7 +38,7 @@ function mps_fidelity(mps1::MPS, mps2::MPS)::Float64
         @tensor C[k, l] := C[i, j] * An_dag[j, d, l] * Bn[i, d, k]
     end
 
-    return sqrt(real(C[1, 1]))
+    return sqrt(abs(C[1, 1]))
 end
 
 function mps_norm(mps::MPS)::Float64
@@ -50,7 +50,7 @@ function mps_norm(mps::MPS)::Float64
         @tensor C[k, l] := C[i, j] * An_dag[j, d, l] * An[i, d, k]
     end
 
-    return sqrt(real(C[1, 1]))
+    return sqrt(abs(C[1, 1]))
 end
 
 function r2l_LQ!(mps::MPS)

@@ -16,7 +16,7 @@ mpo = heisen_chain_MPO(N, BC)
 mps_rnd = MPS{Float64}(N, d, D)
 r2l_LQ!(mps_rnd)
 
-@time λs, trunc_errors = DMRG_loop_2site!(mps_rnd, mpo, 2, 1e-12)
+@time λs, trunc_errors = DMRG_loop_2site!(mps_rnd, mpo, 4, 1e-15)
 E_dmrg = λs[end]
 
 println("DMRG Final Energy:   ", E_dmrg)
@@ -27,6 +27,7 @@ println("Bethe Ansatz Energy: ", E_Bethe)
 # %% plot truncation errors
 p = plot(trunc_errors; label="two-site DMRG truncation errors", xlabel="update steps", ylabel="truncation errors",
     linewidth=2, marker=:circle, markersize=2)
+title!(p, "N=$N, D=$D, $BC")
 
 # %% plot relative errors
 E_errs = abs.((λs .- E_Bethe) / E_Bethe)

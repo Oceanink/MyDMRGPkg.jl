@@ -140,11 +140,6 @@ function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Float64)
     λs_all = Vector{Float64}(undef, max_size)
     trunc_errs_all = Vector{Float64}(undef, max_size)
 
-    # Preallocate temporary arrays for each sweep
-    # λs_lr = Vector{Float64}(undef, N - 1)
-    # trunc_errors_lr = Vector{Float64}(undef, N - 1)
-    # λs_rl = Vector{Float64}(undef, N - 1)
-    # trunc_errors_rl = Vector{Float64}(undef, N - 1)
     λs = Vector{Float64}(undef, N - 1)
     trunc_errs = Vector{Float64}(undef, N - 1)
 
