@@ -5,7 +5,7 @@ using Plots, Printf
 
 N = 50 # number of sites
 d = 2 # physical dim
-D = 30 # bond dim
+D = 10 # bond dim
 
 BC = "PBC"
 E_Bethe = heisen_chain_Bethe(N, BC)

@@ -17,8 +17,10 @@ function l2r_DMRG_prep_2site(mps::MPS{T}, mpo::MPO) where {T}
 end
 
 
-function DMRG_1step_2site(left_env::Array{T,3}, O1::Array{T2,4}, O2::Array{T2,4}, right_env::Array{T,3}, D::Int, direction::String) where {T,T2}
+function DMRG_1step_2site(left_env::Array{T,3}, O1::Array{T2,4}, O2::Array{T2,4}, right_env::Array{T,3}, D::Int, direction::String; x0=nothing) where {T,T2}
     """Single two-site DMRG optimization step using iterative eigensolver
+
+    Optional x0: initial guess vector (reshaped to size of two-site tensor)
     """
     @assert direction == "l2r" || direction == "r2l"
     @tensor H_eff[u, i, o, p, v, b, n, m] := left_env[u, j, v] * O1[j, k, i, b] * O2[k, l, o, n] * right_env[p, l, m]
@@ -31,7 +33,11 @@ function DMRG_1step_2site(left_env::Array{T,3}, O1::Array{T2,4}, O2::Array{T2,4}
     # Find only the smallest eigenvalue using iterative method
     # :SR means "smallest real" eigenvalue
     H_eff_mat = reshape(H_eff, dim1, dim2)
-    λs, vecs, _ = eigsolve(H_eff_mat, 1, :SR)
+    if x0 !== nothing
+        λs, vecs, _ = eigsolve(H_eff_mat, x0, 1, :SR)
+    else
+        λs, vecs, _ = eigsolve(H_eff_mat, 1, :SR)
+    end
     λ = real(λs[1])
 
     B_mat = reshape(vecs[1], Dl * d, d * Dr)
@@ -56,6 +62,7 @@ end
 function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, left_envs::Vector{Array{T,3}}, λs::Vector{Float64}, trunc_errors::Vector{Float64}) where {T}
     """Left-to-right two-site DMRG sweep from site 1 to site N-1
     Modifies MPS in-place and reuses preallocated left_envs and λs arrays.
+    Uses current two-site tensor as initial guess for next pair.
     """
     N = mps.N
 
@@ -66,8 +73,26 @@ function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, lef
         O2 = mpo.O[n+1]
         D = size(mps.A[n], 3)
 
+        # Compute expected dimensions for two-site tensor
+        Dl = size(left_env, 3)  # left bond dimension
+        Dr = size(right_env, 3) # right bond dimension
+        d = size(O1, 4)         # physical dimension (should be same as size(O2,4))
+
+        # Prepare initial guess from current MPS tensors if dimensions match
+        x0 = nothing
+        if n >= 2  # For n=1, no previous update; for n>=2, site n may have been updated by previous step
+            # Check if current tensors have expected outer dimensions
+            Dl_curr, d1, Dmid = size(mps.A[n])
+            Dmid2, d2, Dr_curr = size(mps.A[n+1])
+            if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
+                # Contract current two-site tensor
+                @tensor B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
+                x0 = vec(B_curr)
+            end
+        end
+
         # update site n
-        Al, Ar, λ, e_trunc = DMRG_1step_2site(left_env, O1, O2, right_env, D, "l2r")
+        Al, Ar, λ, e_trunc = DMRG_1step_2site(left_env, O1, O2, right_env, D, "l2r"; x0=x0)
 
         # store
         mps.A[n] = Al
@@ -92,6 +117,7 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
     trunc_errors::Vector{Float64}) where {T}
     """Right-to-left DMRG sweep from site N to site 2
     Modifies MPS in-place and reuses preallocated right_envs and λs arrays.
+    Uses current two-site tensor as initial guess for next pair.
     """
     N = mps.N
 
@@ -102,8 +128,26 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
         O2 = mpo.O[n]
         D = size(mps.A[n-1], 3)
 
+        # Compute expected dimensions for two-site tensor
+        Dl = size(left_env, 3)  # left bond dimension
+        Dr = size(right_env, 3) # right bond dimension
+        d = size(O1, 4)         # physical dimension (should be same as size(O2,4))
+
+        # Prepare initial guess from current MPS tensors if dimensions match
+        x0 = nothing
+        if n <= N-1  # For n=N, no previous update; for n<=N-1, site n-1 may have been updated by previous step
+            # Check if current tensors have expected outer dimensions
+            Dl_curr, d1, Dmid = size(mps.A[n-1])
+            Dmid2, d2, Dr_curr = size(mps.A[n])
+            if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
+                # Contract current two-site tensor
+                @tensor B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
+                x0 = vec(B_curr)
+            end
+        end
+
         # update site n
-        Al, Ar, λ, e_trunc = DMRG_1step_2site(left_env, O1, O2, right_env, D, "r2l")
+        Al, Ar, λ, e_trunc = DMRG_1step_2site(left_env, O1, O2, right_env, D, "r2l"; x0=x0)
 
         # store
         mps.A[n-1] = Al

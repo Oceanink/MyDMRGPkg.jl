@@ -1,5 +1,6 @@
-using MyDMRGPkg
 using Test
+using MyDMRGPkg
+using Random
 
 
 @testset "Two-site DMRG input canonicalization" begin
@@ -41,7 +42,7 @@ end
     @test length(energies) == length(steps)
     @test all(isfinite, rel_errors)
     @test all(isfinite, trunc_errors)
-    # @test all(>=(0.0), trunc_errors)
+    @test (energies[end-1] - energies[end]) < 1e-6
 
     mkpath("test/output")
     p1 = plot(
