@@ -135,7 +135,7 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
 
         # Prepare initial guess from current MPS tensors if dimensions match
         x0 = nothing
-        if n <= N-1  # For n=N, no previous update; for n<=N-1, site n-1 may have been updated by previous step
+        if n <= N - 1  # For n=N, no previous update; for n<=N-1, site n-1 may have been updated by previous step
             # Check if current tensors have expected outer dimensions
             Dl_curr, d1, Dmid = size(mps.A[n-1])
             Dmid2, d2, Dr_curr = size(mps.A[n])
@@ -196,19 +196,19 @@ function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Float64)
         # Left-to-right sweep
         l2r_DMRG_2site!(mps, mpo, right_envs, left_envs, λs, trunc_errs)
         λs_all[idx+1:idx+N-1] .= λs[1:N-1]
+        λ_lr = λs[N-1]
         trunc_errs_all[idx+1:idx+N-1] .= trunc_errs[1:N-1]
         idx += N - 1
 
         # Right-to-left sweep
         r2l_DMRG_2site!(mps, mpo, left_envs, right_envs, λs, trunc_errs)
         λs_all[idx+1:idx+N-1] .= λs[1:N-1]
+        λ_rl = λs[N-1]
         trunc_errs_all[idx+1:idx+N-1] .= trunc_errs[1:N-1]
         idx += N - 1
 
         # Check convergence
-        if idx >= 2
-            e = λs_all[idx-1] - λs_all[idx]
-        end
+        e = λ_lr - λ_rl
 
         i += 1
     end

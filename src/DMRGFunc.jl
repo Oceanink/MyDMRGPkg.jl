@@ -132,7 +132,7 @@ function r2l_DMRG!(mps::MPS, mpo::MPO,
         On = mpo.O[n]
 
         # If we have L from previous site (n+1), apply it to current site n from right side
-        if prev_L !== nothing && n <= N-1
+        if prev_L !== nothing && n <= N - 1
             # Apply L to site n from right side
             Dl, d, Dr = size(mps.A[n])
             # prev_L size should be (Dr, Dr) square (since L from LQ of site n+1)
@@ -145,7 +145,7 @@ function r2l_DMRG!(mps::MPS, mpo::MPO,
 
         # Prepare initial guess: use current site tensor if dimensions match
         x0 = nothing
-        if n <= N-1  # For sites N-1 and less, we may have previous L applied
+        if n <= N - 1  # For sites N-1 and less, we may have previous L applied
             # Check if current tensor dimensions match the expected dimensions of An_new
             j_dim = size(left_env, 3)  # left bond dimension from left_env
             k_dim = size(On, 4)        # physical dimension d
@@ -171,7 +171,7 @@ function r2l_DMRG!(mps::MPS, mpo::MPO,
         right_envs[n-1] = right_env_new
     end
 
-    return nothing
+    return prev_L
 end
 
 function l2r_DMRG_prep(mps::MPS{T}, mpo::MPO) where {T}
@@ -215,24 +215,29 @@ function DMRG_loop!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Float64) where
     i = 0 # index of loops
     e = 100 # initial error
 
+    L = nothing
     while i < times && e > threshold
         # Left-to-right sweep
         l2r_DMRG!(mps, mpo, right_envs, left_envs, λs)
         λs_all[idx+1:idx+N-1] .= λs[1:N-1]
+        λ_lr = λs[N-1]
         idx += N - 1
 
         # Right-to-left sweep
-        r2l_DMRG!(mps, mpo, left_envs, right_envs, λs)
+        L = r2l_DMRG!(mps, mpo, left_envs, right_envs, λs)
         λs_all[idx+1:idx+N-1] .= λs[1:N-1]
+        λ_rl = λs[N-1]
         idx += N - 1
 
         # Check convergence
-        if idx >= 2
-            e = λs_all[idx-1] - λs_all[idx]
-        end
+        e = λ_lr - λ_rl
 
         i += 1
     end
+
+    A1 = nothing
+    @tensor A1[i, j, l] := mps.A[1][i, j, k] * L[k, l]
+    mps.A[1] = A1 ./ norm(A1)
 
     return λs_all[1:idx]
 end
@@ -349,7 +354,7 @@ function DMRG_converge!(mps::MPS{T}, mpo::MPO, max_sites_updated::Int, threshold
             On = mpo.O[n]
 
             # If we have L from previous site (n+1), apply it to current site n from right side
-            if prev_L !== nothing && n <= N-1
+            if prev_L !== nothing && n <= N - 1
                 # Apply L to site n from right side
                 Dl, d, Dr = size(mps.A[n])
                 # prev_L size should be (Dr, Dr) square (since L from LQ of site n+1)
@@ -362,7 +367,7 @@ function DMRG_converge!(mps::MPS{T}, mpo::MPO, max_sites_updated::Int, threshold
 
             # Prepare initial guess: use current site tensor if dimensions match
             x0 = nothing
-            if n <= N-1  # For sites N-1 and less, we may have previous L applied
+            if n <= N - 1  # For sites N-1 and less, we may have previous L applied
                 # Check if current tensor dimensions match the expected dimensions of An_new
                 j_dim = size(left_env, 3)  # left bond dimension from left_env
                 k_dim = size(On, 4)        # physical dimension d

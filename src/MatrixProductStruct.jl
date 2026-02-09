@@ -1,3 +1,5 @@
+import Base: eltype
+
 export MPS, MPO
 
 struct MPO{T}
@@ -41,3 +43,8 @@ function MPS{T}(N::Int, d::Int, D::Int) where {T}
 
     return MPS{T}(A, N, d)
 end
+
+Base.eltype(::Type{MPS{T}}) where {T} = T
+Base.eltype(::MPS{T}) where {T} = T
+Base.eltype(::Type{MPO{T}}) where {T} = T
+Base.eltype(::MPO{T}) where {T} = T
