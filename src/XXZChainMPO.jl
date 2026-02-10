@@ -1,20 +1,19 @@
 export xxz_chain_MPO
 
-function xxz_chain_MPO(N::Int, BC::String)::MPO
+function xxz_chain_MPO(N::Int, Δ::Float64, BC::String)::MPO
     @assert BC == "OBC" || BC == "PBC"
     if BC == "OBC"
-        return heisen_chain_MPO_OBC(N)
+        return xxz_chain_MPO_OBC(N, Δ)
     elseif BC == "PBC"
-        return heisen_chain_MPO_PBC(N)
+        return xxz_chain_MPO_PBC(N, Δ)
     end
 end
 
 
-function heisen_chain_MPO_OBC(N::Int)::MPO
-    hbar = 1
-    Sz = (hbar / 2) * [1 0; 0 -1]
-    Sp = hbar * [0 1; 0 0]
-    Sm = hbar * [0 0; 1 0]
+function xxz_chain_MPO_OBC(N::Int, Δ::Float64)::MPO
+    Sz = 0.5 * [1 0; 0 -1]
+    Sp = [0 1; 0 0]
+    Sm = [0 0; 1 0]
     I2 = [1 0; 0 1]
 
     d = 2
@@ -28,7 +27,7 @@ function heisen_chain_MPO_OBC(N::Int)::MPO
     column = zeros(4, d, d)
     column[1, :, :] = 0.5 * Sm
     column[2, :, :] = 0.5 * Sp
-    column[3, :, :] = Sz
+    column[3, :, :] = Δ * Sz
     column[4, :, :] = I2
 
     D_vec = Vector{Int}(undef, N + 1)
@@ -60,7 +59,7 @@ function heisen_chain_MPO_OBC(N::Int)::MPO
 end
 
 
-function heisen_chain_MPO_PBC(N::Int)::MPO
+function xxz_chain_MPO_PBC(N::Int, Δ::Float64)::MPO
     hbar = 1
     Sz = (hbar / 2) * [1 0; 0 -1]
     Sp = hbar * [0 1; 0 0]
@@ -81,10 +80,10 @@ function heisen_chain_MPO_PBC(N::Int)::MPO
     column = zeros(7, d, d)
     column[1, :, :] = 0.5 * Sm
     column[2, :, :] = 0.5 * Sp
-    column[3, :, :] = Sz
+    column[3, :, :] = Δ * Sz
     column[4, :, :] = 0.5 * Sm
     column[5, :, :] = 0.5 * Sp
-    column[6, :, :] = Sz
+    column[6, :, :] = Δ * Sz
     column[7, :, :] = I2
 
     D_vec = Vector{Int}(undef, N + 1)

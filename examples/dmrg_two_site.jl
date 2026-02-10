@@ -5,8 +5,8 @@ using Plots, Printf
 
 N = 50 # number of sites
 d = 2 # physical dim
-D = 60 # bond dim
-max_loops = 2
+D = 50 # bond dim
+max_loops = 3
 max_sweeps = max_loops * 2
 
 BC = "PBC"
@@ -23,9 +23,7 @@ E_dmrg = λs[end]
 
 println("DMRG Final Energy:   ", E_dmrg)
 println("Bethe Ansatz Energy: ", E_Bethe)
-
-mpo_variance(mps_rnd, mpo)
-# step-wise Visualization
+println("variance: ", mpo_variance(mps_rnd, mpo))
 
 # %% plot truncation errors
 p = plot(trunc_errors; label="two-site DMRG truncation errors", xlabel="update steps", ylabel="truncation errors",

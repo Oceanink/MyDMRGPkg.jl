@@ -3,15 +3,16 @@ using Plots, Printf
 
 # %% DMRG sweep
 
-N = 50 # number of sites
+N = 100 # number of sites
 d = 2 # physical dim
 D = 20 # bond dim
-max_loops = 4
-
-BC = "PBC"
+max_loops = 2
 E_Bethe = heisen_chain_Bethe(N, BC)
-# generate mpo of N-site PBC heisenberg chain
-mpo = heisen_chain_MPO(N, BC)
+
+Δ = 1. # Heisenberg Chain
+BC = "PBC"
+# generate mpo of N-site PBC XXZ chain
+mpo = xxz_chain_MPO(N, Δ, BC)
 
 # mps_rnd = MPS{Float64}(N, d, 20)
 # r2l_LQ!(mps_rnd)
@@ -19,7 +20,7 @@ mpo = heisen_chain_MPO(N, BC)
 # mps_padding!(mps_rnd, D)
 mps_rnd = MPS{Float64}(N, d, D)
 r2l_LQ!(mps_rnd)
-mpo_variance(mps_rnd, mpo)
+
 # %%
 
 @time λs = DMRG_loop!(mps_rnd, mpo, max_loops, -1.)
@@ -29,8 +30,8 @@ E_dmrg = λs[end]
 
 println("DMRG Final Energy:   ", E_dmrg)
 println("Bethe Ansatz Energy: ", E_Bethe)
+println("variance: ", mpo_variance(mps_rnd, mpo))
 
-mpo_variance(mps_rnd, mpo)
 # %% λ --- steps plot
 p = plot(λs; label="one-site DMRG variational energy", xlabel="update steps", ylabel="λ",
     linewidth=2, marker=:circle, markersize=2)
