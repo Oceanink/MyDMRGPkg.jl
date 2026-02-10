@@ -4,7 +4,7 @@ function l2r_DMRG_prep_2site(mps::MPS{T}, mpo::MPO) where {T}
     """Prepare right environments for the first left-to-right sweep"""
     N = mps.N
     right_envs = Vector{Array{T,3}}(undef, N - 1)
-    right_envs[N-1] = ones(1, 1, 1)
+    right_envs[N-1] = ones(T, 1, 1, 1)
 
     for n in N:-1:3
         On = mpo.O[n]
@@ -43,17 +43,23 @@ function DMRG_1step_2site(left_env::Array{T,3}, O1::Array{T2,4}, O2::Array{T2,4}
     B_mat = reshape(vecs[1], Dl * d, d * Dr)
     U, S, V = svd(B_mat)
     D_keep = min(Dl * d, d * Dr, D)
-    e_trunc = sum(S[D_keep+1:end] .^ 2)
-    U_trunc = U[:, 1:D_keep]
-    S_trunc = S[1:D_keep]
-    Vh_trunc = V'[1:D_keep, :]
+    @views begin
+        e_trunc = D_keep < length(S) ? sum(abs2, S[D_keep+1:end]) : zero(real(eltype(S)))
+        S_trunc = S[1:D_keep]
+        U_trunc = U[:, 1:D_keep]
+        Vh_trunc = V'[1:D_keep, :]
+    end
 
     if direction == "l2r"
-        Al = reshape(U_trunc, Dl, d, D_keep)
-        Ar = reshape(diagm(S_trunc) * Vh_trunc, D_keep, d, Dr)
+        Al = reshape(Matrix(U_trunc), Dl, d, D_keep)
+        Ar_mat = Matrix(Vh_trunc)
+        lmul!(Diagonal(S_trunc), Ar_mat)
+        Ar = reshape(Ar_mat, D_keep, d, Dr)
     else
-        Al = reshape(U_trunc * diagm(S_trunc), Dl, d, D_keep)
-        Ar = reshape(Vh_trunc, D_keep, d, Dr)
+        Al_mat = Matrix(U_trunc)
+        rmul!(Al_mat, Diagonal(S_trunc))
+        Al = reshape(Al_mat, Dl, d, D_keep)
+        Ar = reshape(Matrix(Vh_trunc), D_keep, d, Dr)
     end
 
     return Al, Ar, λ, e_trunc
@@ -176,7 +182,7 @@ function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Float64)
 
     # Preallocate environments (reused across sweeps)
     left_envs = Vector{Array{T,3}}(undef, N - 1)
-    left_envs[1] = ones(1, 1, 1)
+    left_envs[1] = ones(T, 1, 1, 1)
     right_envs = l2r_DMRG_prep_2site(mps, mpo)
 
     # Preallocate energy array with maximum possible size
@@ -190,21 +196,21 @@ function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Float64)
 
     idx = 0 # index of last stored energy
     i = 0 # index of loops
-    e = 100 # initial error
+    e = Inf # initial error
 
     while i < times && e > threshold
         # Left-to-right sweep
         l2r_DMRG_2site!(mps, mpo, right_envs, left_envs, λs, trunc_errs)
-        λs_all[idx+1:idx+N-1] .= λs[1:N-1]
+        copyto!(λs_all, idx + 1, λs, 1, N - 1)
         λ_lr = λs[N-1]
-        trunc_errs_all[idx+1:idx+N-1] .= trunc_errs[1:N-1]
+        copyto!(trunc_errs_all, idx + 1, trunc_errs, 1, N - 1)
         idx += N - 1
 
         # Right-to-left sweep
         r2l_DMRG_2site!(mps, mpo, left_envs, right_envs, λs, trunc_errs)
-        λs_all[idx+1:idx+N-1] .= λs[1:N-1]
+        copyto!(λs_all, idx + 1, λs, 1, N - 1)
         λ_rl = λs[N-1]
-        trunc_errs_all[idx+1:idx+N-1] .= trunc_errs[1:N-1]
+        copyto!(trunc_errs_all, idx + 1, trunc_errs, 1, N - 1)
         idx += N - 1
 
         # Check convergence
@@ -213,5 +219,7 @@ function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Float64)
         i += 1
     end
 
-    return λs_all[1:idx], trunc_errs_all[1:idx]
+    resize!(λs_all, idx)
+    resize!(trunc_errs_all, idx)
+    return λs_all, trunc_errs_all
 end

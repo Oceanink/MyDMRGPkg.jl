@@ -1,6 +1,6 @@
-export xxz_chain_MPO
+export heisen_chain_MPO
 
-function xxz_chain_MPO(N::Int, BC::String)::MPO
+function heisen_chain_MPO(N::Int, BC::String)::MPO
     @assert BC == "OBC" || BC == "PBC"
     if BC == "OBC"
         return heisen_chain_MPO_OBC(N)

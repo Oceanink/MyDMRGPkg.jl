@@ -45,4 +45,4 @@ K_exact = xxz_luttinger_exact(Δ)
 K_dmrg = 1 / co^4
 
 println("Δ = $Δ, Exact K = ", K_exact)
-println("Δ = $Δ, DMRG  K = ", K_dmrg)
+println("D = $D, DMRG  K = ", K_dmrg)

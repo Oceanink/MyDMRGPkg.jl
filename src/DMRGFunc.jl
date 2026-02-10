@@ -178,7 +178,7 @@ function l2r_DMRG_prep(mps::MPS{T}, mpo::MPO) where {T}
     """Prepare right environments for the first left-to-right sweep"""
     N = mps.N
     right_envs = Vector{Array{T,3}}(undef, N)
-    right_envs[N] = ones(1, 1, 1)
+    right_envs[N] = ones(T, 1, 1, 1)
 
     for n in N:-1:2
         On = mpo.O[n]
@@ -200,7 +200,7 @@ function DMRG_loop!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Float64) where
 
     # Preallocate environments (reused across sweeps)
     left_envs = Vector{Array{T,3}}(undef, N)
-    left_envs[1] = ones(1, 1, 1)
+    left_envs[1] = ones(T, 1, 1, 1)
     right_envs = l2r_DMRG_prep(mps, mpo)
 
     # Preallocate energy array with maximum possible size
@@ -213,19 +213,19 @@ function DMRG_loop!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Float64) where
 
     idx = 0 # index of last stored energy
     i = 0 # index of loops
-    e = 100 # initial error
+    e = Inf # initial error
 
     L = nothing
     while i < times && e > threshold
         # Left-to-right sweep
         l2r_DMRG!(mps, mpo, right_envs, left_envs, λs)
-        λs_all[idx+1:idx+N-1] .= λs[1:N-1]
+        copyto!(λs_all, idx + 1, λs, 1, N - 1)
         λ_lr = λs[N-1]
         idx += N - 1
 
         # Right-to-left sweep
         L = r2l_DMRG!(mps, mpo, left_envs, right_envs, λs)
-        λs_all[idx+1:idx+N-1] .= λs[1:N-1]
+        copyto!(λs_all, idx + 1, λs, 1, N - 1)
         λ_rl = λs[N-1]
         idx += N - 1
 
@@ -239,7 +239,8 @@ function DMRG_loop!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Float64) where
     @tensor A1[i, j, l] := mps.A[1][i, j, k] * L[k, l]
     mps.A[1] = A1 ./ norm(A1)
 
-    return λs_all[1:idx]
+    resize!(λs_all, idx)
+    return λs_all
 end
 
 """
@@ -269,7 +270,7 @@ function DMRG_converge!(mps::MPS{T}, mpo::MPO, max_sites_updated::Int, threshold
 
     while (sites_updated < max_sites_updated) && !converged
         # Left-to-right sweep (sites 1 to N-1)
-        left_envs[1] = ones(1, 1, 1)
+        left_envs[1] = ones(T, 1, 1, 1)
         prev_R = nothing  # R factor from previous site
         for n in 1:N-1
             # Check if we've reached max sites
@@ -341,7 +342,7 @@ function DMRG_converge!(mps::MPS{T}, mpo::MPO, max_sites_updated::Int, threshold
         end
 
         # Right-to-left sweep (sites N to 2)
-        right_envs[N] = ones(1, 1, 1)
+        right_envs[N] = ones(T, 1, 1, 1)
         prev_L = nothing  # L factor from previous site (n+1)
         for n in N:-1:2
             # Check if we've reached max sites
