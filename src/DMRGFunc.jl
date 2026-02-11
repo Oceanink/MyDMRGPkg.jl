@@ -65,6 +65,7 @@ function l2r_DMRG!(mps::MPS, mpo::MPO,
     prev_R = nothing  # R factor from previous site (n-1)
 
     for n in 1:N-1
+        # println("update site $n")
         left_env = left_envs[n]
         right_env = right_envs[n]
         On = mpo.O[n]
@@ -127,6 +128,7 @@ function r2l_DMRG!(mps::MPS, mpo::MPO,
     prev_L = nothing  # L factor from previous site (n+1)
 
     for n in N:-1:2
+        # println("update site $n")
         left_env = left_envs[n]
         right_env = right_envs[n]
         On = mpo.O[n]

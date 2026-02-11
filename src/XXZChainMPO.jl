@@ -60,10 +60,9 @@ end
 
 
 function xxz_chain_MPO_PBC(N::Int, Δ::Float64)::MPO
-    hbar = 1
-    Sz = (hbar / 2) * [1 0; 0 -1]
-    Sp = hbar * [0 1; 0 0]
-    Sm = hbar * [0 0; 1 0]
+    Sz = 0.5 * [1 0; 0 -1]
+    Sp = [0 1; 0 0]
+    Sm = [0 0; 1 0]
     I2 = [1 0; 0 1]
 
     d = 2
