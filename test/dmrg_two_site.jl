@@ -1,6 +1,8 @@
 using Test
 using MyDMRGPkg
 using Random
+using Plots
+
 
 
 @testset "Two-site DMRG input canonicalization" begin

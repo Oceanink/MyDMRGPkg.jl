@@ -1,8 +1,9 @@
 using Test
 using MyDMRGPkg
-using LinearAlgebra
-using KrylovKit
 using Random
+using LinearAlgebra
+using TensorOperations
+using KrylovKit
 using Printf
 
 

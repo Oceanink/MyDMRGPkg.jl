@@ -1,9 +1,4 @@
 using Test
-using MyDMRGPkg
-using Random
-using LinearAlgebra
-using Plots
-
 
 @testset "two_site_dmrg" begin
     # Write your tests here.
