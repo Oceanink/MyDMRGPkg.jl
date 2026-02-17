@@ -8,7 +8,7 @@ function xxz_luttinger_exact(Δ::Float64)
     return K
 end
 
-function xxz_crosscap_overlay(mps::MPS)
+function xxz_crosscap_overlap(mps::MPS)
     N = mps.N
     @assert N % 4 == 0
 
@@ -38,7 +38,7 @@ D = 30 # bond dim
 mps = MPS{Float64}(N, d, D)
 r2l_LQ!(mps)
 _, _ = DMRG_loop_2site!(mps, mpo, max_loops, -1.)
-co = xxz_crosscap_overlay(mps)
+co = xxz_crosscap_overlap(mps)
 
 K_exact = xxz_luttinger_exact(Δ)
 K_dmrg = 1 / co^4
@@ -46,9 +46,9 @@ K_dmrg = 1 / co^4
 println("Δ = $Δ, Exact K = ", K_exact)
 println("D = $D, DMRG  K = ", K_dmrg)
 # %%
-N = 20 # number of sites
+N = 40 # number of sites
 d = 2 # physical dim
-D = 30
+D = 40
 max_loops = 4
 BC = "PBC"
 
@@ -66,7 +66,7 @@ for i in 1:l
 
     mpo = xxz_chain_MPO(N, Δ, BC)
     _, _ = DMRG_loop_2site!(mps, mpo, max_loops, -1.)
-    co = xxz_crosscap_overlay(mps)
+    co = xxz_crosscap_overlap(mps)
     Ks_dmrg[i] = 1 / co^4
 end
 

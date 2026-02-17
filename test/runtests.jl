@@ -14,3 +14,7 @@ end
     # Write your tests here.
     include("dmrg_one_site.jl")
 end
+
+@testset "H_eff Contraction and Eigensolve Benchmark" begin
+    include("heff_contraction_eigsolve_time.jl")
+end
