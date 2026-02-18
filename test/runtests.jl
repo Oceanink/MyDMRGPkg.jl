@@ -1,15 +1,10 @@
 using Test
 
-@testset "two_site_dmrg" begin
-    # Write your tests here.
-    include("dmrg_two_site.jl")
-end
+include("dmrg_two_site.jl")
+include("dmrg_one_site.jl")
 
-@testset "one_site_dmrg" begin
-    # Write your tests here.
-    include("dmrg_one_site.jl")
-end
+# @testset "H_eff Contraction and Eigensolve Benchmark" begin
+#     include("heff_contraction_eigsolve_time.jl")
+# end
 
-@testset "H_eff Contraction and Eigensolve Benchmark" begin
-    include("heff_contraction_eigsolve_time.jl")
-end
+include("haldane_shastry_mpo.jl")

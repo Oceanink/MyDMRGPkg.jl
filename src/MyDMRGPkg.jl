@@ -9,9 +9,14 @@ using KrylovKit
 include("MatrixProductStruct.jl")
 include("MPSFunc.jl")
 include("OperatorOverload.jl")
+
 include("HeisenChainMPO.jl")
 include("XXZChainMPO.jl")
+include("HaldaneShastryMPO.jl")
+
+include("CrosscapOverlap.jl")
 include("HeisenChainBethe.jl")
+
 include("DMRGFunc.jl")
 include("DMRGFuncTwoSite.jl")
 
