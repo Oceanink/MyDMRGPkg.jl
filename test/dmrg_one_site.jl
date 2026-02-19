@@ -3,7 +3,6 @@ using MyDMRGPkg
 using Random
 using Plots
 
-
 @testset "One-site DMRG input canonicalization" begin
     Random.seed!(1234)
 

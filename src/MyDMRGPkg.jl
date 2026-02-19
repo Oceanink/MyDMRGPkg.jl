@@ -6,18 +6,18 @@ using TensorOperations
 using LinearAlgebra
 using KrylovKit
 
-include("MatrixProductStruct.jl")
-include("MPSFunc.jl")
-include("OperatorOverload.jl")
+include("./MPS/MatrixProductStruct.jl")
+include("./MPS/MPSFunc.jl")
+include("./MPS/OperatorOverload.jl")
+include("./MPS/CrosscapOverlap.jl")
 
-include("HeisenChainMPO.jl")
-include("XXZChainMPO.jl")
-include("HaldaneShastryMPO.jl")
+include("./MPO/HeisenChainMPO.jl")
+include("./MPO/HeisenChainBethe.jl")
+include("./MPO/XXZChainMPO.jl")
+include("./MPO/HaldaneShastryMPO.jl")
 
-include("CrosscapOverlap.jl")
-include("HeisenChainBethe.jl")
 
-include("DMRGFunc.jl")
-include("DMRGFuncTwoSite.jl")
+include("./DMRG/DMRGFunc.jl")
+include("./DMRG/DMRGFuncTwoSite.jl")
 
 end

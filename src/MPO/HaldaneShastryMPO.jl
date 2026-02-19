@@ -28,11 +28,6 @@ function haldane_shastry_MPO(N::Int)
     column[N+1, :, :] = Sm
     column[2N, :, :] = Sp
     column[end, :, :] = I2
-    # for k in 1:N-1
-    #     column[k+1, :, :] = Sz
-    #     column[k+N, :, :] = Sm
-    #     column[k+2*N-1, :, :] = Sp
-    # end
 
     D_vec = Vector{Int}(undef, N + 1)
     D_vec[1] = 1
