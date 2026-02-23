@@ -9,13 +9,12 @@ function xxz_chain_MPO(N::Int, Δ::Float64, BC::String)::MPO
     end
 end
 
+Sz = 0.5 * [1 0; 0 -1]
+Sp = [0 1; 0 0]
+Sm = [0 0; 1 0]
+I2 = [1 0; 0 1]
 
 function xxz_chain_MPO_OBC(N::Int, Δ::Float64)::MPO
-    Sz = 0.5 * [1 0; 0 -1]
-    Sp = [0 1; 0 0]
-    Sm = [0 0; 1 0]
-    I2 = [1 0; 0 1]
-
     d = 2
 
     row = zeros(4, d, d)
@@ -60,11 +59,6 @@ end
 
 
 function xxz_chain_MPO_PBC(N::Int, Δ::Float64)::MPO
-    Sz = 0.5 * [1 0; 0 -1]
-    Sp = [0 1; 0 0]
-    Sm = [0 0; 1 0]
-    I2 = [1 0; 0 1]
-
     d = 2
 
     row = zeros(7, d, d)

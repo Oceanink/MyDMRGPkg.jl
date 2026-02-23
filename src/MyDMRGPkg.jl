@@ -15,6 +15,8 @@ include("./MPO/HeisenChainMPO.jl")
 include("./MPO/HeisenChainBethe.jl")
 include("./MPO/XXZChainMPO.jl")
 include("./MPO/HaldaneShastryMPO.jl")
+include("./MPO/NearestIsingMPO.jl")
+include("./MPO/LongRangeTransverseIsingMPO.jl")
 
 
 include("./DMRG/DMRGFunc.jl")

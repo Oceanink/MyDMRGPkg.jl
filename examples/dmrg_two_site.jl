@@ -3,9 +3,9 @@ using Plots, Printf
 
 # %% DMRG sweep
 
-N = 100 # number of sites
+N = 40 # number of sites
 d = 2 # physical dim
-D = 10 # bond dim
+D = 20 # bond dim
 max_loops = 3
 max_sweeps = max_loops * 2
 
