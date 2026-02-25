@@ -1,4 +1,4 @@
-export nearest_ising_MPO
+export nearest_ising_MPO, nearest_ising_ground_exact
 
 # This generates the MPO of the following Hamiltonian
 # H = - Σ_j J σ_j^x σ_{j+1}^x - h Σ_j σ_j^z
@@ -51,4 +51,14 @@ function nearest_ising_MPO(N::Int, J::Real, h::Real)
 
     mpo = MPO{Float64}(O, N, d)
     return mpo
+end
+
+function nearest_ising_ground_exact(N::Int, J, h)
+    g = h / J
+    m_lst = collect(1:2:2N-1)
+    E_even = -J * sum(sqrt.(1 .+ g^2 .- 2g * cospi.(m_lst / N)))
+    m_lst = collect(0:2:2N-2)
+    E_odd = -J * sum(sqrt.(1 .+ g^2 .- 2g * cospi.(m_lst / N)))
+    E = min(E_even, E_odd)
+    return E
 end

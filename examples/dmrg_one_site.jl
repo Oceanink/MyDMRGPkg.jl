@@ -7,10 +7,10 @@ N = 100 # number of sites
 d = 2 # physical dim
 D = 20 # bond dim
 max_loops = 2
+BC = "PBC"
 E_Bethe = heisen_chain_Bethe(N, BC)
 
 Δ = 1. # Heisenberg Chain
-BC = "PBC"
 # generate mpo of N-site PBC XXZ chain
 mpo = xxz_chain_MPO(N, Δ, BC)
 
@@ -23,7 +23,7 @@ r2l_LQ!(mps_rnd)
 
 # %%
 
-@time λs = DMRG_loop!(mps_rnd, mpo, max_loops, -1.)
+λs = DMRG_loop!(mps_rnd, mpo, max_loops, -1.)
 E_dmrg = λs[end]
 # @time (E_dmrg, sites_updated) = DMRG_converge!(mps_rnd, mpo, 200, 1e-12)
 # println("Sites updated: ", sites_updated)

@@ -34,9 +34,9 @@ function DMRG_1step_2site(left_env::Array{T,3}, O1::Array{T2,4}, O2::Array{T2,4}
     # :SR means "smallest real" eigenvalue
     H_eff_mat = reshape(H_eff, dim1, dim2)
     if x0 !== nothing
-        λs, vecs, _ = eigsolve(H_eff_mat, x0, 1, :SR)
+        λs, vecs, _ = eigsolve(H_eff_mat, x0, 1, :SR, ishermitian=true)
     else
-        λs, vecs, _ = eigsolve(H_eff_mat, 1, :SR)
+        λs, vecs, _ = eigsolve(H_eff_mat, 1, :SR, ishermitian=true)
     end
     λ = real(λs[1])
 
@@ -172,12 +172,13 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
 end
 
 
-function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Float64) where {T}
+function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Real) where {T}
     """Main DMRG loop 
     - Preallocates all arrays
     - Reuses environment tensors
     - Modifies MPS in-place
     """
+    @assert is_right_canonical(mps)
     N = mps.N
 
     # Preallocate environments (reused across sweeps)

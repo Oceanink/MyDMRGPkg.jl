@@ -18,7 +18,7 @@ mpo = heisen_chain_MPO(N, BC)
 mps_rnd = MPS{Float64}(N, d, D)
 r2l_LQ!(mps_rnd)
 
-@time λs, trunc_errors = DMRG_loop_2site!(mps_rnd, mpo, max_loops, -1.)
+λs, trunc_errors = DMRG_loop_2site!(mps_rnd, mpo, max_loops, -1.)
 E_dmrg = λs[end]
 
 println("DMRG Final Energy:   ", E_dmrg)
