@@ -1,4 +1,4 @@
-module MyDMRGPkg
+﻿module MyDMRGPkg
 
 # Write your package code here.
 using Random
@@ -15,7 +15,7 @@ include("./MPO/HeisenChainMPO.jl")
 include("./MPO/HeisenChainBethe.jl")
 include("./MPO/XXZChainMPO.jl")
 include("./MPO/HaldaneShastryMPO.jl")
-include("./MPO/NearestIsingMPO.jl")
+include("./MPO/TransverseIsingMPO.jl")
 include("./MPO/LongRangeTransverseIsingMPO.jl")
 
 

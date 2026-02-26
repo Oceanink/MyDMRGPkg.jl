@@ -5,4 +5,6 @@
 /docs/Manifest*.toml
 /docs/build/
 .vscode/settings.json
+/examples/img/
+/examples/jld2_data/
 docs
