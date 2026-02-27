@@ -3,9 +3,9 @@ export transverse_ising_MPO, transverse_ising_ground_exact
 # This generates the MPO of the following Hamiltonian
 # H = - Σ_j J σ_j^x σ_{j+1}^x - h Σ_j σ_j^z
 
-σz = [1 0; 0 -1]
-σx = [0 1.0; 1 0]
-I2 = [1.0 0; 0 1]
+# const σz = [1 0; 0 -1]
+# const σx = [0 1.0; 1 0]
+# const I2 = [1.0 0; 0 1]
 
 function transverse_ising_MPO(N::Int, J::Real, h::Real)
     d = 2
@@ -53,7 +53,7 @@ function transverse_ising_MPO(N::Int, J::Real, h::Real)
     return mpo
 end
 
-function transverse_ising_ground_exact(N::Int, J, h)
+function transverse_ising_ground_exact(N::Int, J::Real, h::Real)
     g = h / J
     m_lst = collect(1:2:2N-1)
     E_even = -J * sum(sqrt.(1 .+ g^2 .- 2g * cospi.(m_lst / N)))

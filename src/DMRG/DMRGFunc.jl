@@ -237,7 +237,7 @@ function DMRG_loop!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Float64) where
         i += 1
     end
 
-    A1 = nothing
+    A1 = zeros(T, size(mps.A[1], 1), size(mps.A[1], 2), size(L, 2))
     @tensor A1[i, j, l] := mps.A[1][i, j, k] * L[k, l]
     mps.A[1] = A1 ./ norm(A1)
 

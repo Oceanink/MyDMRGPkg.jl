@@ -9,10 +9,10 @@ function xxz_chain_MPO(N::Int, Δ::Float64, BC::String)::MPO
     end
 end
 
-Sz = 0.5 * [1 0; 0 -1]
-Sp = [0 1; 0 0]
-Sm = [0 0; 1 0]
-I2 = [1 0; 0 1]
+# const Sz = 0.5 * [1 0; 0 -1]
+# const Sp = [0 1; 0 0]
+# const Sm = [0 0; 1 0]
+# const I2 = [1 0; 0 1]
 
 function xxz_chain_MPO_OBC(N::Int, Δ::Float64)::MPO
     d = 2

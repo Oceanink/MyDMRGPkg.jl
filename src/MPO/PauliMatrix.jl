@@ -1,0 +1,6 @@
+const Sz = 0.5 * [1 0; 0 -1]
+const Sp = [0 1.0; 0 0]
+const Sm = [0 0; 1.0 0]
+const σx = [0 1.0; 1 0]
+const σz = [1.0 0; 0 -1]
+const I2 = [1.0 0; 0 1]

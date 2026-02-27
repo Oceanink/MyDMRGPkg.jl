@@ -11,6 +11,7 @@ include("./MPS/MPSFunc.jl")
 include("./MPS/OperatorOverload.jl")
 include("./MPS/CrosscapOverlap.jl")
 
+include("./MPO/PauliMatrix.jl")
 include("./MPO/HeisenChainMPO.jl")
 include("./MPO/HeisenChainBethe.jl")
 include("./MPO/XXZChainMPO.jl")

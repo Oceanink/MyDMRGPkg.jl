@@ -4,10 +4,10 @@ function cal_J(k::Int, N::Int)
     return (pi / N)^2 / (sinpi(k / N)^2)
 end
 
-Sz = 0.5 * [1 0; 0 -1]
-Sp = [0 1.0; 0 0]
-Sm = [0 0; 1.0 0]
-I2 = [1.0 0; 0 1]
+# const Sz = 0.5 * [1 0; 0 -1]
+# const Sp = [0 1.0; 0 0]
+# const Sm = [0 0; 1.0 0]
+# const I2 = [1.0 0; 0 1]
 
 function haldane_shastry_MPO(N::Int)
     d = 2

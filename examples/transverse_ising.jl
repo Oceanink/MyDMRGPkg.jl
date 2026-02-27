@@ -16,13 +16,12 @@ function prepare_mps(mpo::MPO, N::Int, d::Int, D_small::Int, D_large::Int)
 end
 # %%
 
-N = 32 # number of sites
+N = 20 # number of sites
 d = 2 # physical dim
 D = 30 # bond dim
 J = 1
-h = 1.3
-max_loops = 6
-
+h = 0.5
+max_loops = 3
 
 mpo = transverse_ising_MPO(N, J, h)
 mps = prepare_mps(mpo, N, d, 20, D)
@@ -36,8 +35,6 @@ E_exact = transverse_ising_ground_exact(N, J, h)
 
 println("DMRG Final Energy:   ", E_dmrg)
 println("Exact ground Energy: ", E_exact)
-println("variance: ", mpo_variance(mps, mpo))
-
 
 # %%
 
