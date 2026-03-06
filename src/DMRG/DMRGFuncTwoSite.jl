@@ -72,7 +72,8 @@ function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, lef
     """
     N = mps.N
 
-    for n in 1:N-1
+    iter = ProgressBar(1:N-1)
+    for n in iter
         left_env = left_envs[n]
         right_env = right_envs[n]
         O1 = mpo.O[n]
@@ -99,6 +100,7 @@ function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, lef
 
         # update site n
         Al, Ar, λ, e_trunc = DMRG_1step_2site(left_env, O1, O2, right_env, D, "l2r"; x0=x0)
+        set_description(iter, string(@sprintf("λ: %.2f", λ)))
 
         # store
         mps.A[n] = Al
@@ -127,7 +129,8 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
     """
     N = mps.N
 
-    for n in N:-1:2
+    iter = ProgressBar(N:-1:2)
+    for n in iter
         left_env = left_envs[n-1]
         right_env = right_envs[n-1]
         O1 = mpo.O[n-1]
@@ -154,6 +157,7 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
 
         # update site n
         Al, Ar, λ, e_trunc = DMRG_1step_2site(left_env, O1, O2, right_env, D, "r2l"; x0=x0)
+        set_description(iter, string(@sprintf("λ: %.2f", λ)))
 
         # store
         mps.A[n-1] = Al
@@ -201,6 +205,7 @@ function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Real) wh
 
     while i < times && e > threshold
         # Left-to-right sweep
+        println("DMRG loop $(i+1), left-to-right sweep...")
         l2r_DMRG_2site!(mps, mpo, right_envs, left_envs, λs, trunc_errs)
         copyto!(λs_all, idx + 1, λs, 1, N - 1)
         λ_lr = λs[N-1]
@@ -208,6 +213,7 @@ function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Real) wh
         idx += N - 1
 
         # Right-to-left sweep
+        println("DMRG loop $(i+1), right-to-left sweep...")
         r2l_DMRG_2site!(mps, mpo, left_envs, right_envs, λs, trunc_errs)
         copyto!(λs_all, idx + 1, λs, 1, N - 1)
         λ_rl = λs[N-1]

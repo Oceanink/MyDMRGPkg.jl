@@ -64,7 +64,7 @@ function l2r_DMRG!(mps::MPS, mpo::MPO,
     # Apply R from previous site to current site before optimization
     prev_R = nothing  # R factor from previous site (n-1)
 
-    for n in 1:N-1
+    for n in ProgressBar(1:N-1)
         # println("update site $n")
         left_env = left_envs[n]
         right_env = right_envs[n]
@@ -127,7 +127,7 @@ function r2l_DMRG!(mps::MPS, mpo::MPO,
     # Apply L from previous site (n+1) to current site n before optimization
     prev_L = nothing  # L factor from previous site (n+1)
 
-    for n in N:-1:2
+    for n in ProgressBar(N:-1:2)
         # println("update site $n")
         left_env = left_envs[n]
         right_env = right_envs[n]
@@ -220,12 +220,14 @@ function DMRG_loop!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Float64) where
     L = nothing
     while i < times && e > threshold
         # Left-to-right sweep
+        println("DMRG loop $(i+1), left-to-right sweep...")
         l2r_DMRG!(mps, mpo, right_envs, left_envs, λs)
         copyto!(λs_all, idx + 1, λs, 1, N - 1)
         λ_lr = λs[N-1]
         idx += N - 1
 
         # Right-to-left sweep
+        println("DMRG loop $(i+1), right-to-left sweep...")
         L = r2l_DMRG!(mps, mpo, left_envs, right_envs, λs)
         copyto!(λs_all, idx + 1, λs, 1, N - 1)
         λ_rl = λs[N-1]

@@ -5,6 +5,8 @@ using Random
 using TensorOperations
 using LinearAlgebra
 using KrylovKit
+using ProgressBars
+using Printf
 
 include("./MPS/MatrixProductStruct.jl")
 include("./MPS/MPSFunc.jl")

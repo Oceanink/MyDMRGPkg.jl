@@ -5,7 +5,7 @@ using Plots, Printf
 
 N = 40 # number of sites
 d = 2 # physical dim
-D = 20 # bond dim
+D = 30 # bond dim
 max_loops = 3
 max_sweeps = max_loops * 2
 
