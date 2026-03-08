@@ -2,6 +2,7 @@
 
 # Write your package code here.
 using Random
+using CUDA
 using TensorOperations
 using LinearAlgebra
 using KrylovKit

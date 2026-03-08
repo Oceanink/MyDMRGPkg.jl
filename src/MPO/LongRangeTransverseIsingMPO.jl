@@ -30,12 +30,9 @@ function long_range_transverse_ising_MPO(N::Int, α::Float64, h::Float64)
     column[2, :, :] = σx
     column[end, :, :] = I2
 
-    D_vec = Vector{Int}(undef, N + 1)
+    D_vec = fill(D, N + 1)
     D_vec[1] = 1
-    D_vec[N+1] = 1
-    for i in 2:N
-        D_vec[i] = D
-    end
+    D_vec[end] = 1
 
     # (Dl, Dr, d, d)
     O = Vector{Array{Float64,4}}(undef, N)

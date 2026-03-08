@@ -1,6 +1,6 @@
 import Base: eltype
 
-export MPS, MPO
+export MPS, MPO, CuMPO, CuMPS
 
 struct MPO{T}
     O::Vector{Array{T,4}}
@@ -44,7 +44,33 @@ function MPS{T}(N::Int, d::Int, D::Int) where {T}
     return MPS{T}(A, N, d)
 end
 
+struct CuMPO{T}
+    O::Vector{CuArray{T,4,CUDA.DeviceMemory}}
+    N::Int
+    d::Int
+
+    function CuMPO{T}(O::Vector{CuArray{T,4,CUDA.DeviceMemory}}, N::Int, d::Int) where {T}
+        new{T}(O, N, d)
+    end
+end
+
+struct CuMPS{T}
+    A::Vector{CuArray{T,3,CUDA.DeviceMemory}}
+    N::Int
+    d::Int
+
+    function CuMPS{T}(A::Vector{CuArray{T,3,CUDA.DeviceMemory}}, N::Int, d::Int) where {T}
+        new{T}(A, N, d)
+    end
+end
+
+
 Base.eltype(::Type{MPS{T}}) where {T} = T
 Base.eltype(::MPS{T}) where {T} = T
 Base.eltype(::Type{MPO{T}}) where {T} = T
 Base.eltype(::MPO{T}) where {T} = T
+
+Base.eltype(::Type{CuMPS{T}}) where {T} = T
+Base.eltype(::CuMPS{T}) where {T} = T
+Base.eltype(::Type{CuMPO{T}}) where {T} = T
+Base.eltype(::CuMPO{T}) where {T} = T
