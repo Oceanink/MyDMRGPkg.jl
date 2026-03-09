@@ -1,4 +1,4 @@
-export haldane_shastry_MPO, haldane_shastry_H_matrix
+export haldane_shastry_MPO, hs_crosscap_overlap_exact, haldane_shastry_H_matrix
 
 function cal_J(k::Int, N::Int)
     return (pi / N)^2 / (sinpi(k / N)^2)
@@ -56,6 +56,12 @@ function haldane_shastry_MPO(N::Int)
 
     mpo = MPO{Float64}(O, N, d)
     return mpo
+end
+
+function hs_crosscap_overlap_exact(M::Integer)
+    # log(co2) = M*log(2) + 3*log(M!) - 2*log((M/2)!) - log((2M)!)
+    log_co2 = M * log(2) + 3 * loggamma(M + 1) - 2 * loggamma(div(M, 2) + 1) - loggamma(2M + 1)
+    return exp(log_co2)
 end
 
 function haldane_shastry_H_matrix(N::Int)

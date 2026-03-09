@@ -3,6 +3,7 @@
 # Write your package code here.
 using Random
 using CUDA
+using cuTENSOR
 using TensorOperations
 using LinearAlgebra
 using KrylovKit
@@ -25,5 +26,7 @@ include("./MPO/LongRangeTransverseIsingMPO.jl")
 
 include("./DMRG/DMRGFunc.jl")
 include("./DMRG/DMRGFuncTwoSite.jl")
+include("./DMRG/DMRGFuncCuda.jl")
+
 
 end

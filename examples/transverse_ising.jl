@@ -2,39 +2,50 @@ using MyDMRGPkg
 using TensorOperations
 using LinearAlgebra
 using Plots
-using JLD2
+# using JLD2
 
-function prepare_mps(mpo::MPO, N::Int, d::Int, D_small::Int, D_large::Int)
-    mps = MPS{Float64}(N, d, D_small)
-    r2l_LQ!(mps)
-    if D_large > D_small
-        _, _ = DMRG_loop_2site!(mps, mpo, 2, -1.)
-        mps_padding!(mps, D_large)
-        r2l_LQ!(mps)
-    end
-    return mps
-end
+# function prepare_mps(mpo::MPO, N::Int, d::Int, D_small::Int, D_large::Int)
+#     mps = MPS{Float64}(N, d, D_small)
+#     r2l_LQ!(mps)
+#     if D_large > D_small
+#         _, _ = DMRG_loop_2site!(mps, mpo, 2, -1.)
+#         mps_padding!(mps, D_large)
+#         r2l_LQ!(mps)
+#     end
+#     return mps
+# end
 # %%
 
-N = 20 # number of sites
+N = 60 # number of sites
 d = 2 # physical dim
-D = 30 # bond dim
+D = 100 # bond dim
 J = 1
 h = 0.5
-max_loops = 3
+max_loops = 2
 
 mpo = transverse_ising_MPO(N, J, h)
-mps = prepare_mps(mpo, N, d, 20, D)
+mpo_gpu = cu(mpo)
 
-@time λs, trunc_errors = DMRG_loop_2site!(mps, mpo, max_loops, -1);
-co = crosscap_overlap(mps)
-println("N=$N, ", "D=$D, ", "h=$h, ", abs2(co))
+mps = MPS{Float64}(N, d, D)
+r2l_LQ!(mps)
+mps_gpu = cu(mps);
+
+λs, trunc_errors = DMRG_loop_2site_cuda!(mps_gpu, mpo_gpu, max_loops, -1);
+# co = crosscap_overlap(mps)
+# println("N=$N, ", "D=$D, ", "h=$h, ", abs2(co))
 
 E_dmrg = λs[end]
 E_exact = transverse_ising_ground_exact(N, J, h)
 
 println("DMRG Final Energy:   ", E_dmrg)
 println("Exact ground Energy: ", E_exact)
+
+# %%
+
+mps = MPS{Float64}([Array(A) for A in mps_gpu.A], mps_gpu.N, mps_gpu.d)
+co = crosscap_overlap(mps)
+println("N=$N, ", "D=$D, ", "h=$h, ", abs2(co))
+
 
 # %%
 

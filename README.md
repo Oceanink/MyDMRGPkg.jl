@@ -8,22 +8,53 @@
 
 ## Features
 
-- **MPS/MPO structures**: `MPS{T}` and `MPO{T}` tensor network types
+- **MPS/MPO structures**: `MPS{T}` and `MPO{T}` tensor network types with GPU support (`CuMPS{T}`, `CuMPO{T}`)
 - **Supported Hamiltonians**:
   - Heisenberg chain (`heisen_chain_MPO`) with OBC/PBC
   - XXZ chain (`xxz_chain_MPO`) with anisotropy parameter Δ
   - Haldane-Shastry model (`haldane_shastry_MPO`) with long-range interactions
+  - Transverse Ising model (`transverse_ising_MPO`, `long_range_transverse_ising_MPO`)
 - **Bethe ansatz reference**: `heisen_chain_Bethe()` for ground-state energy comparison
-- **One-site DMRG**: `DMRG_loop!()` (fixed sweeps) and `DMRG_converge!()` (adaptive)
-- **Two-site DMRG**: `DMRG_loop_2site!()` with truncation error
-- **Crosscap overlap**: `crosscap_overlap()` (N % 4 == 0)
-- **Validation**: `is_left_canonical()`, `is_right_canonical()`, `mps_norm()`
+- **One-site DMRG**: `DMRG_loop!()` (fixed sweeps) and `DMRG_converge!()` (adaptive convergence)
+- **Two-site DMRG**: `DMRG_loop_2site!()` with truncation error tracking
+- **GPU Two-site DMRG**: `DMRG_loop_2site_cuda!()` with linearmap eigensolver
 
 ## Installation
 
 ```julia
 using Pkg
 Pkg.add(url="https://github.com/Oceanink/MyDMRGPkg.jl")
+```
+
+## Quick Start (GPU Two-Site DMRG)
+
+For large systems, use GPU acceleration with CUDA:
+
+```julia
+using MyDMRGPkg
+using CUDA
+
+N = 60
+d = 2
+D = 100  
+
+# Create MPS and MPO on CPU
+mps = MPS{Float64}(N, d, D)
+r2l_LQ!(mps)
+mpo = xxz_chain_MPO(N, -0.5, "PBC")
+
+# Transfer to GPU
+mps_gpu = cu(mps)
+mpo_gpu = cu(mpo)
+
+# Run GPU DMRG
+energies, trunc_errors = DMRG_loop_2site_cuda!(mps_gpu, mpo_gpu, max_loops, 1e-12)
+
+# Transfer back to CPU if needed
+mps_cpu = MPS{Float64}([Array(A) for A in mps_gpu.A], mps_gpu.N, mps_gpu.d)
+
+println("Final energy: ", energies[end])
+println("Truncation error: ", trunc_errors[end])
 ```
 
 ## Quick Start (One-Site DMRG)
@@ -102,6 +133,9 @@ Tests include both one-site and two-site DMRG checks and generate plots under `t
 - `DMRG_loop!` returns energy values per local update
 - `DMRG_loop_2site!` returns `(energies, trunc_errors)`
 - `DMRG_converge!` returns `(final_energy, sites_updated)` where `sites_updated = -1` if max limit reached without convergence
+
+- **CUDA Toolkit**: Configure with `CUDA.set_runtime_version!(v"12.8"; local_toolkit=false)` to use Julia's artifact CUDA
+- **Memory Management**: Automatic garbage collection triggers when VRAM usage exceeds 80%. Call `CUDA.reclaim()` manually if needed.
 
 ## License
 

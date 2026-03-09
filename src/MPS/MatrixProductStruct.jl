@@ -44,23 +44,23 @@ function MPS{T}(N::Int, d::Int, D::Int) where {T}
     return MPS{T}(A, N, d)
 end
 
-struct CuMPO{T}
-    O::Vector{CuArray{T,4,CUDA.DeviceMemory}}
+struct CuMPO{T, A<:AbstractArray{T,4}}
+    O::Vector{A}
     N::Int
     d::Int
 
-    function CuMPO{T}(O::Vector{CuArray{T,4,CUDA.DeviceMemory}}, N::Int, d::Int) where {T}
-        new{T}(O, N, d)
+    function CuMPO{T}(O::Vector{<:AbstractArray{T,4}}, N::Int, d::Int) where {T}
+        new{T, eltype(O)}(O, N, d)
     end
 end
 
-struct CuMPS{T}
-    A::Vector{CuArray{T,3,CUDA.DeviceMemory}}
+struct CuMPS{T, A<:AbstractArray{T,3}}
+    A::Vector{A}
     N::Int
     d::Int
 
-    function CuMPS{T}(A::Vector{CuArray{T,3,CUDA.DeviceMemory}}, N::Int, d::Int) where {T}
-        new{T}(A, N, d)
+    function CuMPS{T}(A::Vector{<:AbstractArray{T,3}}, N::Int, d::Int) where {T}
+        new{T, eltype(A)}(A, N, d)
     end
 end
 
@@ -70,7 +70,7 @@ Base.eltype(::MPS{T}) where {T} = T
 Base.eltype(::Type{MPO{T}}) where {T} = T
 Base.eltype(::MPO{T}) where {T} = T
 
-Base.eltype(::Type{CuMPS{T}}) where {T} = T
-Base.eltype(::CuMPS{T}) where {T} = T
-Base.eltype(::Type{CuMPO{T}}) where {T} = T
-Base.eltype(::CuMPO{T}) where {T} = T
+Base.eltype(::Type{CuMPS{T,A}}) where {T,A} = T
+Base.eltype(::CuMPS{T,A}) where {T,A} = T
+Base.eltype(::Type{CuMPO{T,A}}) where {T,A} = T
+Base.eltype(::CuMPO{T,A}) where {T,A} = T

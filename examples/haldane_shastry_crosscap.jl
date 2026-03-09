@@ -5,12 +5,6 @@ using Plots, Printf
 using SpecialFunctions
 using JLD2
 
-function hs_crosscap_overlap_exact(M::Integer)
-    # log(co2) = M*log(2) + 3*log(M!) - 2*log((M/2)!) - log((2M)!)
-    log_co2 = M * log(2) + 3 * loggamma(M + 1) - 2 * loggamma(div(M, 2) + 1) - loggamma(2M + 1)
-    return exp(log_co2)
-end
-
 # %% 
 
 N = 28

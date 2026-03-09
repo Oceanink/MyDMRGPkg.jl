@@ -6,3 +6,9 @@
 /docs/build/
 .vscode/settings.json
 docs
+examples/cuda_test.jl
+
+# Generated data and figures
+examples/img/
+examples/jld2_data/
+test/output/
