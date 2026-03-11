@@ -1,9 +1,6 @@
 using Test
 using MyDMRGPkg
 using Random
-using Plots
-
-
 
 @testset "Two-site DMRG input canonicalization" begin
     Random.seed!(1234)
@@ -45,31 +42,4 @@ end
     @test all(isfinite, rel_errors)
     @test all(isfinite, trunc_errors)
     @test (energies[end-1] - energies[end]) < 1e-6
-
-    mkpath("test/output")
-    p1 = plot(
-        steps,
-        rel_errors;
-        label="|E_dmrg - E_bethe| / |E_bethe|",
-        xlabel="update steps",
-        ylabel="relative error",
-        linewidth=2,
-        marker=:circle,
-        markersize=2,
-    )
-    p2 = plot(
-        steps,
-        trunc_errors;
-        label="truncation error",
-        xlabel="update steps",
-        ylabel="truncation error",
-        linewidth=2,
-        marker=:diamond,
-        markersize=2,
-    )
-    title!(p1, "Two-site DMRG relative errors, N=$N, D=$D, $BC")
-    title!(p2, "Two-site DMRG truncation errors,N=$N,D=$D,$BC")
-
-    savefig(p1, "test/output/two_site_relative_errors.png")
-    savefig(p2, "test/output/two_site_truncation_errors.png")
 end

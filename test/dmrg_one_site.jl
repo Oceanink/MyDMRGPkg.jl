@@ -1,7 +1,6 @@
 using Test
 using MyDMRGPkg
 using Random
-using Plots
 
 @testset "One-site DMRG input canonicalization" begin
     Random.seed!(1234)
@@ -41,21 +40,4 @@ end
     @test length(energies) == length(steps)
     @test all(isfinite, rel_errors)
     @test (energies[end-1] - energies[end]) < 1e-6
-
-
-    mkpath("test/output")
-    p1 = plot(
-        steps,
-        rel_errors;
-        label="|E_dmrg - E_bethe| / |E_bethe|",
-        xlabel="update steps",
-        ylabel="relative error",
-        linewidth=2,
-        marker=:circle,
-        markersize=2,
-    )
-
-    title!(p1, "One-site DMRG relative errors, N=$N, D=$D, $BC")
-
-    savefig(p1, "test/output/one_site_relative_errors.png")
 end
