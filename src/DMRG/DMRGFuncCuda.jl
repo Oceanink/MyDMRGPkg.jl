@@ -1,4 +1,4 @@
-export DMRG_loop_2site_cuda!, cu
+export DMRG_loop_2site_cuda!, cu, cpu
 
 using LinearMaps
 
@@ -168,7 +168,7 @@ function DMRG_1step_2site_cuda(left_env::CuArray{T,3}, O1::CuArray{T,4}, O2::CuA
     dim = Dl * d * d * Dr
 
     if x0 !== nothing
-        λs, vecs, _ = eigsolve(H_map, x0, 1, :SR, ishermitian=true, tol=1e-10)
+        λs, vecs, _ = eigsolve(H_map, x0, 1, :SR, ishermitian=true, tol=1e-12)
     else
         x0_rand = CUDA.rand(T, dim) .- T(0.5)
         x0_rand ./= norm(x0_rand)

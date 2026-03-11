@@ -12,3 +12,4 @@ examples/cuda_test.jl
 examples/img/
 examples/jld2_data/
 test/output/
+examples/Manifest.toml
