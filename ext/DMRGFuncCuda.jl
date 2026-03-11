@@ -1,76 +1,36 @@
-export DMRG_loop_2site_cuda!, cu, cpu
+module DMRGFuncCuda
 
-using LinearMaps
+using MyDMRGPkg, CUDA, cuTENSOR, LinearMaps
+using Random
+using TensorOperations
+using LinearAlgebra
+using KrylovKit
+using ProgressBars
+using Printf
 
-function cu(mpo::MPO{T}) where T
+function MyDMRGPkg.cu(mpo::MPO{T}) where T
     O_gpu = [CuArray(W) for W in mpo.O]
     return CuMPO{T}(O_gpu, mpo.N, mpo.d)
 end
 
-function cu(mpo::MPO, dtype::Type)
+function MyDMRGPkg.cu(mpo::MPO, dtype::Type)
     O_gpu = [CuArray(dtype.(W)) for W in mpo.O]
     return CuMPO{dtype}(O_gpu, mpo.N, mpo.d)
 end
 
-function cu(mps::MPS{T}) where T
+function MyDMRGPkg.cu(mps::MPS{T}) where T
     A_gpu = [CuArray(W) for W in mps.A]
     return CuMPS{T}(A_gpu, mps.N, mps.d)
 end
 
-function cu(mps::MPS, dtype::Type)
+function MyDMRGPkg.cu(mps::MPS, dtype::Type)
     A_gpu = [CuArray(dtype.(W)) for W in mps.A]
     return CuMPS{dtype}(A_gpu, mps.N, mps.d)
 end
 
-function cpu(mps::CuMPS{T}) where T
+function MyDMRGPkg.cpu(mps::CuMPS{T}) where T
     A_cpu = [Array(A) for A in mps.A]
     return MPS{T}(A_cpu, mps.N, mps.d)
-end
-
-"""
-    _estimate_vram_usage_gb(N, D, d, T)
-
-Estimate VRAM usage in GB for two-site DMRG.
-
-Accounts for:
-- MPS/MPO storage
-- Environment tensors (left and right)
-- Two-site wavefunction and H_eff application
-- Krylov subspace vectors (eigsolve)
-- SVD workspace buffers
-- Tensor contraction intermediates
-"""
-function _estimate_vram_usage_gb(N::Int, D::Int, d::Int, ::Type{T}) where T
-    bytes_per_elem = sizeof(T)
-
-    # Base storage
-    mps_size = N * D^2 * d * bytes_per_elem
-    mpo_size = N * D^2 * d^2 * bytes_per_elem
-    env_size = 2 * (N - 1) * D^3 * bytes_per_elem
-
-    # Two-site tensor (D*D, d*d) matrix
-    two_site_size = D^2 * d^2 * bytes_per_elem
-
-    # H_eff matvec temporaries (largest intermediate contraction)
-    # left_env[u,j,v] * O1[j,k,i,b] * X[v,b,n,m] * O2[k,l,o,n] * right_env[p,l,m]
-    # The largest intermediate is roughly D^4 * d^2
-    heff_temp_size = D^4 * d^2 * bytes_per_elem
-
-    # Krylov subspace: eigsolve keeps ~20-30 vectors of size D^2*d^2
-    krylov_size = 20 * D^2 * d^2 * bytes_per_elem
-
-    # SVD workspace: gesvdj needs ~5-10x the matrix size (D^2*d x D^2*d)
-    svd_workspace_size = 5 * D^2 * d * D^2 * d * bytes_per_elem
-
-    # Environment update temporaries (each @tensor creates temporaries)
-    # For updating left_env: contraction of 4 tensors, intermediate ~D^4
-    env_update_temp = 2 * D^4 * d * bytes_per_elem
-
-    # Peak memory (during first sweep when all environments are computed)
-    total_bytes = mps_size + mpo_size + env_size + two_site_size +
-                  heff_temp_size + krylov_size + svd_workspace_size + env_update_temp
-
-    return total_bytes / (1024^3)
 end
 
 """
@@ -328,14 +288,9 @@ Returns:
 - λs_all: Energy values at each update step
 - trunc_errs_all: Truncation errors at each update step
 """
-function DMRG_loop_2site_cuda!(mps::CuMPS{T}, mpo::CuMPO{T}, times::Int, threshold::Real) where T
+function MyDMRGPkg.DMRG_loop_2site!(mps::CuMPS{T}, mpo::CuMPO{T}, times::Int, threshold::Real) where T
     N = mps.N
-
-    vram_estimate = _estimate_vram_usage_gb(N, maximum(size.(mps.A, 3)), mps.d, T)
-    println("Estimated VRAM usage: $(round(vram_estimate, digits=2)) GB")
-
     d = mps.d
-    D_max = maximum([size(A, 3) for A in mps.A])
 
     left_envs = Vector{CuArray{T,3}}(undef, N - 1)
     left_envs[1] = CUDA.ones(T, 1, 1, 1)
@@ -384,4 +339,6 @@ function DMRG_loop_2site_cuda!(mps::CuMPS{T}, mpo::CuMPO{T}, times::Int, thresho
     CUDA.reclaim()
 
     return λs_all, trunc_errs_all
+end
+
 end

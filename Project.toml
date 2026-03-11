@@ -4,24 +4,27 @@ version = "1.0.0-DEV"
 authors = ["Oceanink"]
 
 [deps]
-CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-LinearMaps = "7a12625a-238d-50fd-b39a-03d52299707e"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 ProgressBars = "49802e3a-d2f1-5c88-81d8-b72133a6f568"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 TensorOperations = "6aa20fa7-93e2-5fca-9bc0-fbd0db3c71a2"
+
+[weakdeps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+LinearMaps = "7a12625a-238d-50fd-b39a-03d52299707e"
 cuTENSOR = "011b41b2-24ef-40a8-b3eb-fa098493e9e1"
+
+[extensions]
+DMRGFuncCuda = ["CUDA","cuTENSOR","LinearMaps"]
 
 [compat]
 CUDA = "5.9"
-JLD2 = "0.6.3"
 KrylovKit = "0.10.2"
 LinearAlgebra = "1.12.0"
 LinearMaps = "3.11.4"
-Plots = "1.41.5"
 Printf = "1.11.0"
 ProgressBars = "1.5.1"
 Random = "1.11.0"
@@ -31,10 +34,7 @@ cuTENSOR = "2.3.0"
 julia = "1.12"
 
 [extras]
-JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
-Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]
-examples = ["Plots", "JLD2"]

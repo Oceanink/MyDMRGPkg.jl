@@ -1,6 +1,6 @@
 import Base: eltype
 
-export MPS, MPO, CuMPO, CuMPS
+export MPS, MPO, CuMPO, CuMPS, cu, cpu
 
 struct MPO{T}
     O::Vector{Array{T,4}}
@@ -44,26 +44,28 @@ function MPS{T}(N::Int, d::Int, D::Int) where {T}
     return MPS{T}(A, N, d)
 end
 
-struct CuMPO{T, A<:AbstractArray{T,4}}
+struct CuMPO{T,A<:AbstractArray{T,4}}
     O::Vector{A}
     N::Int
     d::Int
 
     function CuMPO{T}(O::Vector{<:AbstractArray{T,4}}, N::Int, d::Int) where {T}
-        new{T, eltype(O)}(O, N, d)
+        new{T,eltype(O)}(O, N, d)
     end
 end
 
-struct CuMPS{T, A<:AbstractArray{T,3}}
+struct CuMPS{T,A<:AbstractArray{T,3}}
     A::Vector{A}
     N::Int
     d::Int
 
     function CuMPS{T}(A::Vector{<:AbstractArray{T,3}}, N::Int, d::Int) where {T}
-        new{T, eltype(A)}(A, N, d)
+        new{T,eltype(A)}(A, N, d)
     end
 end
 
+function cu end
+function cpu end
 
 Base.eltype(::Type{MPS{T}}) where {T} = T
 Base.eltype(::MPS{T}) where {T} = T
