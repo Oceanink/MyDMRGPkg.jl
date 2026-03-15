@@ -4,7 +4,7 @@ export long_range_transverse_ising_MPO
 # H = - Σ_{1≤i<j≤N}J_{ij} σ_i^x σ_j^x - h Σ_j σ_j^z
 # J_{ij} = J_k when k = |i-j|
 
-function cal_J(k::Int, N::Int, α::Float64)
+function cal_J(k::Int, N::Int, α::Real)
     return 1 / abs(sinpi(k / N) * N / pi)^α
 end
 
@@ -12,7 +12,7 @@ end
 # const σx = [0 1.0; 1 0]
 # const I2 = [1.0 0; 0 1]
 
-function long_range_transverse_ising_MPO(N::Int, α::Float64, h::Float64)
+function long_range_transverse_ising_MPO(N::Int, α::Real, h::Real)
     d = 2
     D = N + 1
     k_lst = collect(1:1:N-1)

@@ -1,4 +1,5 @@
-using MyDMRGPkg
+using MyDMRGPkg, CUDA, cuTENSOR, LinearMaps
+using MyDMRGPkg: cu, cpu
 using LinearAlgebra
 using Plots
 using JLD2
@@ -17,7 +18,7 @@ using JLD2
 
 N = 60 # number of sites
 d = 2 # physical dim
-D = 2 # bond dim
+D = 20 # bond dim
 J = 1
 h = 0.5
 max_loops = 10
@@ -27,7 +28,7 @@ mpo_gpu = cu(mpo)
 mps = MPS{Float64}(N, d, D)
 r2l_LQ!(mps)
 mps_gpu = cu(mps);
-λs, trunc_errors = DMRG_loop_2site_cuda!(mps_gpu, mpo_gpu, max_loops, -1);
+λs, trunc_errors = DMRG_loop_2site!(mps_gpu, mpo_gpu, max_loops, -1);
 # λs, trunc_errors = DMRG_loop_2site!(mps, mpo, max_loops, -1);
 
 mps = cpu(mps_gpu)
@@ -46,10 +47,11 @@ println("Exact ground Energy: ", E_exact)
 J = 1
 d = 2
 # D = 40
-max_loops = 3
+max_loops = 4
 N_lst = [20, 32, 48, 60]
-D_lst = [30, 40, 60, 100]
-h_lst = collect(1.5:-0.05:0.5)
+D_lst = [30, 40, 80, 80]
+h_lst = collect(0.99:0.002:1.01)
+# h_lst = collect(1.5:-0.05:0.8)
 co2_N_h = zeros(length(N_lst), length(h_lst))
 
 for i in eachindex(N_lst)
@@ -62,10 +64,10 @@ for i in eachindex(N_lst)
         h = h_lst[j]
         mpo = transverse_ising_MPO(N, J, h)
         mpo_gpu = cu(mpo)
-        λs, _ = DMRG_loop_2site_cuda!(mps_gpu, mpo_gpu, max_loops, -1.)
-        jld2_path = "./examples/jld2_data/transverse_ising_mps_data_cuda/" * "N$N" * "_h$h" * "_D$D" * "_mps.jdl2"
+        λs, _ = DMRG_loop_2site!(mps_gpu, mpo_gpu, max_loops, 1e-12)
+        # jld2_path = "./examples/jld2_data/transverse_ising_mps_data_cuda/" * "N$N" * "_h$h" * "_D$D" * "_mps.jdl2"
         mps = cpu(mps_gpu)
-        @save jld2_path mps
+        # @save jld2_path mps
         co = crosscap_overlap(mps)
         co2_N_h[i, j] = abs2(co)
         # println("N=$N, ", "h=$h, ", abs2(co))
@@ -73,14 +75,37 @@ for i in eachindex(N_lst)
 end
 
 # %%
-p = plot(xlabel="h", ylabel="Crosscap Overlap")
+# p = plot(xlabel="h", ylabel="Crosscap Overlap")
+# for i in eachindex(N_lst)
+#     N = N_lst[i]
+#     plot!(h_lst, co2_N_h[i, :], label="N=$N", marker=:circle, markersize=2)
+# end
+# savefig(p, "./examples/img/transverse_ising_crosscap(cuda).png")
+# jld2_path = "./examples/jld2_data/transverse_ising/crosscap.jl2"
+# @save jld2_path co2_N_h N_lst h_lst
+# %%
+# jld2_path = "./examples/jld2_data/transverse_ising/crosscap.jl2"
+# @load jld2_path co2_N_h N_lst h_lst
+
+s_N_h = zeros(length(N_lst), length(h_lst))
+for i in eachindex(N_lst)
+    s_N_h[i, :] = (h_lst .- 1) * N_lst[i]
+end
+
+p = plot(xlabel="(h-1)N", ylabel="Crosscap Overlap")
+marker_N = [:cross, :xcross, :rect, :circle]
 for i in eachindex(N_lst)
     N = N_lst[i]
-    plot!(h_lst, co2_N_h[i, :], label="N=$N", marker=:circle, markersize=2)
+    scatter!(s_N_h[i, :], co2_N_h[i, :], label="N=$N", marker=marker_N[i], markersize=3)
 end
-savefig(p, "./examples/img/transverse_ising_crosscap(cuda).png")
+display(p)
+
 
 # %%
+# s_N_lst = zeros(length(N_lst), length(h_lst))
 
-N_lst = collect(20:4:60)
-# h_lst = 
+# for i in eachindex(N_lst)
+#     s = (h_lst .- 1) * N_lst[i]^(15 / 8)
+#     s_N_lst[i, :] = (h_lst .- 1) * N_lst[i]^(15 / 8)
+# end
+

@@ -1,6 +1,7 @@
 # MyDMRGPkg
 
 <!-- [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://Oceanink.github.io/MyDMRGPkg.jl/dev/) -->
+
 [![Build Status](https://github.com/Oceanink/MyDMRGPkg.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/Oceanink/MyDMRGPkg.jl/actions/workflows/CI.yml)
 [![Coverage](https://codecov.io/gh/Oceanink/MyDMRGPkg.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/Oceanink/MyDMRGPkg.jl)
 
@@ -32,11 +33,12 @@ For large systems, use GPU acceleration with CUDA:
 
 ```julia
 using MyDMRGPkg
-using CUDA
+using MyDMRGPkg:cu, cpu
+using CUDA, cuTENSOR, LinearMaps
 
 N = 60
 d = 2
-D = 100  
+D = 100
 
 # Create MPS and MPO on CPU
 mps = MPS{Float64}(N, d, D)
@@ -48,13 +50,11 @@ mps_gpu = cu(mps)
 mpo_gpu = cu(mpo)
 
 # Run GPU DMRG
-energies, trunc_errors = DMRG_loop_2site_cuda!(mps_gpu, mpo_gpu, max_loops, 1e-12)
+energies, trunc_errors = DMRG_loop_2site!(mps_gpu, mpo_gpu, max_loops, 1e-12; store_all=true, show_progress=true, show_vram=true)
 
 # Transfer back to CPU if needed
-mps_cpu = MPS{Float64}([Array(A) for A in mps_gpu.A], mps_gpu.N, mps_gpu.d)
-
+mps_cpu = cpu(mps_gpu)
 println("Final energy: ", energies[end])
-println("Truncation error: ", trunc_errors[end])
 ```
 
 ## Quick Start (One-Site DMRG)
@@ -93,7 +93,7 @@ mps = MPS{Float64}(N, d, D)
 r2l_LQ!(mps)
 
 mpo = heisen_chain_MPO(N, BC)
-energies, trunc_errors = DMRG_loop_2site!(mps, mpo, 2, 1e-12)
+energies, trunc_errors = DMRG_loop_2site!(mps, mpo, 2, 1e-12; store_all=true, show_progress=true)
 
 println("Final energy: ", energies[end])
 println("Last truncation error: ", trunc_errors[end])
