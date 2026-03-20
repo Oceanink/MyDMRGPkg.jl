@@ -11,5 +11,6 @@ examples/cuda_test.jl
 # Generated data and figures
 examples/img/
 examples/jld2_data/
+examples/csv/
 test/output/
 examples/Manifest.toml

@@ -1,4 +1,4 @@
-export long_range_transverse_ising_MPO
+export long_range_transverse_ising_MPO, long_range_transverse_ising_H_matrix
 
 # This generates the MPO of the following Hamiltonian
 # H = - Σ_{1≤i<j≤N}J_{ij} σ_i^x σ_j^x - h Σ_j σ_j^z
@@ -55,4 +55,32 @@ function long_range_transverse_ising_MPO(N::Int, α::Real, h::Real)
 
     mpo = MPO{Float64}(O, N, d)
     return mpo
+end
+
+function long_range_transverse_ising_H_matrix(N::Int, α::Real, h::Real)
+    H = zeros(2^N, 2^N)
+    k_lst = collect(1:1:N-1)
+    J_lst = cal_J.(k_lst, N, α)
+
+    # Long-range interaction: - Σ_{1≤i<j≤N}J_{ij} σ_i^x σ_j^x
+    for j in 1:N-1
+        for l in j+1:N
+            k = l - j
+            J = J_lst[k]
+
+            path = fill(I2, N)
+            path[j] = -J * σx
+            path[l] = σx
+            H .+= foldl(kron, path)
+        end
+    end
+
+    # Transverse field: - h Σ_j σ_j^z
+    for j in 1:N
+        path = fill(I2, N)
+        path[j] = -h * σz
+        H .+= foldl(kron, path)
+    end
+
+    return H
 end
