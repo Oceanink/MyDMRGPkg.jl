@@ -73,34 +73,7 @@ function l2r_DMRG_prep_2site_cuda(mps::CuMPS{T}, mpo::CuMPO{T}) where T
 end
 
 """
-    _H_eff_matfree!(y, x, left_env, O1, O2, right_env, Dl, d, Dr)
-
-Matrix-free application of H_eff to vector x, storing result in y.
-H_eff |x> = left_env * O1 * O2 * right_env contracted with x.
-Optimized tensor contraction order to minimize intermediate tensor size.
-"""
-function _H_eff_matfree!(y::CuVector{T}, x::CuVector{T},
-    left_env::CuArray{T,3}, O1::CuArray{T,4}, O2::CuArray{T,4}, right_env::CuArray{T,3},
-    Dl::Int, d::Int, Dr::Int) where T
-
-    X = reshape(x, Dl, d, d, Dr)
-
-    # Optimized contraction order: process from left to right
-    @tensor begin
-        tmp1[u, j, b, n, m] := left_env[u, j, v] * X[v, b, n, m]
-        tmp2[u, k, i, n, m] := tmp1[u, j, b, n, m] * O1[j, k, i, b]
-        tmp3[u, l, i, o, m] := tmp2[u, k, i, n, m] * O2[k, l, o, n]
-        Y[u, i, o, p] := tmp3[u, l, i, o, m] * right_env[p, l, m]
-    end
-
-    copyto!(y, vec(Y))
-    return y
-end
-
-
-
-"""
-    DMRG_1step_2site_cuda(left_env, O1, O2, right_env, D::Int, direction::String; x0=nothing)
+DMRG_1step_2site_cuda(left_env, O1, O2, right_env, D::Int, direction::String; x0=nothing)
 
 Single two-site DMRG optimization step on GPU using matrix-free eigensolver.
 """
@@ -114,14 +87,36 @@ function DMRG_1step_2site_cuda(left_env::CuArray{T,3}, O1::CuArray{T,4}, O2::CuA
     Dr = size(right_env, 3)
     d = size(O1, 4)
 
+    # Preallocate temporaries for tensor contractions
+    dim_u = size(left_env, 1)
+    dim_j = size(left_env, 2)
+    dim_k = size(O1, 2)
+    dim_l = size(O2, 2)
+
+    tmp1 = CuArray{T}(undef, dim_u, dim_j, d, d, Dr)
+    tmp2 = CuArray{T}(undef, dim_u, dim_k, d, d, Dr)
+    tmp3 = CuArray{T}(undef, dim_u, dim_l, d, d, Dr)
+
+    function apply_H_eff(x_vec::CuVector{T}, tmp1, tmp2, tmp3, left_env, O1, O2, right_env) where T
+        dim_v = size(left_env, 3)
+        dim_b = size(O1, 4)
+        dim_n = size(O2, 4)
+        dim_m = size(right_env, 3)
+
+        x_tensor = reshape(x_vec, dim_v, dim_b, dim_n, dim_m)
+
+        @tensor begin
+            tmp1[u, j, b, n, m] = left_env[u, j, v] * x_tensor[v, b, n, m]
+            tmp2[u, k, i, n, m] = tmp1[u, j, b, n, m] * O1[j, k, i, b]
+            tmp3[u, l, i, o, m] = tmp2[u, k, i, n, m] * O2[k, l, o, n]
+            y_tensor[u, i, o, p] := tmp3[u, l, i, o, m] * right_env[p, l, m]
+        end
+
+        return vec(y_tensor)
+    end
     dim = Dl * d * d * Dr
 
-    # Create function for H_eff application instead of LinearMap
-    function H_action(x::AbstractVector)
-        y = similar(x)
-        _H_eff_matfree!(y, x, left_env, O1, O2, right_env, Dl, d, Dr)
-        return y
-    end
+    H_action = x -> apply_H_eff(x, tmp1, tmp2, tmp3, left_env, O1, O2, right_env)
 
     if x0 !== nothing
         λs, vecs, _ = eigsolve(H_action, x0, 1, :SR, ishermitian=true, tol=1e-12)
@@ -250,7 +245,7 @@ function l2r_DMRG_2site_cuda!(mps::CuMPS{T}, mpo::CuMPO{T},
         end
         # end
 
-        Al, Ar, λ, e_trunc = DMRG_1step_2site_cuda(left_env, O1, O2, right_env, D, "l2r"; x0=x0)
+        Al, Ar, λ, _ = DMRG_1step_2site_cuda(left_env, O1, O2, right_env, D, "l2r"; x0=x0)
         show_progress && set_description(iter, string(@sprintf("λ: %.6f", λ)))
 
         mps.A[n] = Al

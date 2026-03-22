@@ -1,26 +1,22 @@
 using MyDMRGPkg
-using TensorOperations
-using LinearAlgebra
 using Plots, Printf
-using SpecialFunctions
-using JLD2
 
 # %% 
 
-N = 28
+N = 60
 d = 2
 mpo = haldane_shastry_MPO(N)
 
 max_loops = 4
-D = 60 # mps bond dim
+D = 40 # mps bond dim
 
 mps = MPS{Float64}(N, d, 20)
 r2l_LQ!(mps)
-_, _ = DMRG_loop_2site!(mps, mpo, 4, -1.)
+_, _ = DMRG_loop_2site!(mps, mpo, 4, -1.; store_all=false)
 
 mps_padding!(mps, D)
 r2l_LQ!(mps)
-_, _ = DMRG_loop_2site!(mps, mpo, max_loops, -1.)
+_, _ = DMRG_loop_2site!(mps, mpo, max_loops, -1.; store_all=false)
 
 co2 = abs2(crosscap_overlap(mps))
 
