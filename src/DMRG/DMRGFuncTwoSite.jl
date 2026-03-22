@@ -23,20 +23,43 @@ function DMRG_1step_2site(left_env::Array{T,3}, O1::Array{T2,4}, O2::Array{T2,4}
     Optional x0: initial guess vector (reshaped to size of two-site tensor)
     """
     @assert direction == "l2r" || direction == "r2l"
-    @tensor H_eff[u, i, o, p, v, b, n, m] := left_env[u, j, v] * O1[j, k, i, b] * O2[k, l, o, n] * right_env[p, l, m]
+    Dl = size(left_env, 3)
+    d = size(O1, 4)
+    Dr = size(right_env, 3)
 
-    H_eff_size = size(H_eff)
-    dim1 = prod(H_eff_size[1:4])
-    dim2 = prod(H_eff_size[5:8])
-    Dl, d, _, Dr = H_eff_size[5:8]
+    function apply_H_eff(x_vec::AbstractVector, left_env, O1, O2, right_env)
+        dim_v = size(left_env, 3)
+        dim_b = size(O1, 4)
+        dim_n = size(O2, 4)
+        dim_m = size(right_env, 3)
+
+        # 获取输出维度，用于最后展平
+        dim_u = size(left_env, 1)
+        dim_i = size(O1, 3)
+        dim_o = size(O2, 3)
+        dim_p = size(right_env, 1)
+
+        x_tensor = reshape(x_vec, dim_v, dim_b, dim_n, dim_m)
+
+        @tensor begin
+            tmp1[u, j, b, n, m] := left_env[u, j, v] * x_tensor[v, b, n, m]
+            tmp2[u, k, i, n, m] := tmp1[u, j, b, n, m] * O1[j, k, i, b]
+            tmp3[u, l, i, o, m] := tmp2[u, k, i, n, m] * O2[k, l, o, n]
+            y_tensor[u, i, o, p] := tmp3[u, l, i, o, m] * right_env[p, l, m]
+        end
+
+        return reshape(y_tensor, dim_u * dim_i * dim_o * dim_p)
+    end
+    H_action = x -> apply_H_eff(x, left_env, O1, O2, right_env)
 
     # Find only the smallest eigenvalue using iterative method
     # :SR means "smallest real" eigenvalue
-    H_eff_mat = reshape(H_eff, dim1, dim2)
+    # H_eff_mat = reshape(H_eff, dim1, dim2)
     if x0 !== nothing
-        λs, vecs, _ = eigsolve(H_eff_mat, x0, 1, :SR, ishermitian=true)
+        λs, vecs, _ = eigsolve(H_action, x0, 1, :SR, ishermitian=true)
     else
-        λs, vecs, _ = eigsolve(H_eff_mat, 1, :SR, ishermitian=true)
+        x0 = rand(T, Dl * d * d * Dr)
+        λs, vecs, _ = eigsolve(H_action, x0, 1, :SR, ishermitian=true)
     end
     λ = real(λs[1])
 
@@ -302,7 +325,7 @@ function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Real;
     - Preallocates all arrays
     - Reuses environment tensors
     - Modifies MPS in-place
-    
+
     Keyword arguments:
     - store_all: if true (default), store all energies and truncation errors; if false, only return the final values
     - show_progress: if true (default), display progress bar during sweeps
