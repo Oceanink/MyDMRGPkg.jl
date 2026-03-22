@@ -24,33 +24,39 @@ function DMRG_1step_2site(left_env::Array{T,3}, O1::Array{T2,4}, O2::Array{T2,4}
     """
     @assert direction == "l2r" || direction == "r2l"
     Dl = size(left_env, 3)
-    d = size(O1, 4)
     Dr = size(right_env, 3)
+    d = size(O1, 4)
 
-    function apply_H_eff(x_vec::AbstractVector, left_env, O1, O2, right_env)
+    # Preallocate temporaries for tensor contractions
+    dim_u = size(left_env, 1)
+    dim_j = size(left_env, 2)
+    dim_k = size(O1, 2)
+    dim_l = size(O2, 2)
+
+    tmp1 = Array{T}(undef, dim_u, dim_j, d, d, Dr)
+    tmp2 = Array{T}(undef, dim_u, dim_k, d, d, Dr)
+    tmp3 = Array{T}(undef, dim_u, dim_l, d, d, Dr)
+
+    function apply_H_eff(x_vec::AbstractVector,
+        tmp1, tmp2, tmp3, left_env, O1, O2, right_env)
         dim_v = size(left_env, 3)
         dim_b = size(O1, 4)
         dim_n = size(O2, 4)
         dim_m = size(right_env, 3)
 
-        # 获取输出维度，用于最后展平
-        dim_u = size(left_env, 1)
-        dim_i = size(O1, 3)
-        dim_o = size(O2, 3)
-        dim_p = size(right_env, 1)
-
         x_tensor = reshape(x_vec, dim_v, dim_b, dim_n, dim_m)
 
         @tensor begin
-            tmp1[u, j, b, n, m] := left_env[u, j, v] * x_tensor[v, b, n, m]
-            tmp2[u, k, i, n, m] := tmp1[u, j, b, n, m] * O1[j, k, i, b]
-            tmp3[u, l, i, o, m] := tmp2[u, k, i, n, m] * O2[k, l, o, n]
+            tmp1[u, j, b, n, m] = left_env[u, j, v] * x_tensor[v, b, n, m]
+            tmp2[u, k, i, n, m] = tmp1[u, j, b, n, m] * O1[j, k, i, b]
+            tmp3[u, l, i, o, m] = tmp2[u, k, i, n, m] * O2[k, l, o, n]
             y_tensor[u, i, o, p] := tmp3[u, l, i, o, m] * right_env[p, l, m]
         end
 
-        return reshape(y_tensor, dim_u * dim_i * dim_o * dim_p)
+        return vec(y_tensor)
     end
-    H_action = x -> apply_H_eff(x, left_env, O1, O2, right_env)
+
+    H_action = x -> apply_H_eff(x, tmp1, tmp2, tmp3, left_env, O1, O2, right_env)
 
     # Find only the smallest eigenvalue using iterative method
     # :SR means "smallest real" eigenvalue
