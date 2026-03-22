@@ -112,16 +112,16 @@ function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, lef
 
         # Prepare initial guess from current MPS tensors if dimensions match
         x0 = nothing
-        if n >= 2  # For n=1, no previous update; for n>=2, site n may have been updated by previous step
-            # Check if current tensors have expected outer dimensions
-            Dl_curr, d1, Dmid = size(mps.A[n])
-            Dmid2, d2, Dr_curr = size(mps.A[n+1])
-            if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
-                # Contract current two-site tensor
-                @tensor B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
-                x0 = vec(B_curr)
-            end
+        # if n >= 2  # For n=1, no previous update; for n>=2, site n may have been updated by previous step
+        # Check if current tensors have expected outer dimensions
+        Dl_curr, d1, Dmid = size(mps.A[n])
+        Dmid2, d2, Dr_curr = size(mps.A[n+1])
+        if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
+            # Contract current two-site tensor
+            @tensor B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
+            x0 = vec(B_curr)
         end
+        # end
 
         # update site n
         Al, Ar, λ, e_trunc = DMRG_1step_2site(left_env, O1, O2, right_env, D, "l2r"; x0=x0)
@@ -168,16 +168,16 @@ function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, lef
 
         # Prepare initial guess from current MPS tensors if dimensions match
         x0 = nothing
-        if n >= 2  # For n=1, no previous update; for n>=2, site n may have been updated by previous step
-            # Check if current tensors have expected outer dimensions
-            Dl_curr, d1, Dmid = size(mps.A[n])
-            Dmid2, d2, Dr_curr = size(mps.A[n+1])
-            if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
-                # Contract current two-site tensor
-                @tensor B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
-                x0 = vec(B_curr)
-            end
+        # if n >= 2  # For n=1, no previous update; for n>=2, site n may have been updated by previous step
+        # Check if current tensors have expected outer dimensions
+        Dl_curr, d1, Dmid = size(mps.A[n])
+        Dmid2, d2, Dr_curr = size(mps.A[n+1])
+        if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
+            # Contract current two-site tensor
+            @tensor B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
+            x0 = vec(B_curr)
         end
+        # end
 
         # update site n
         Al, Ar, λ, e_trunc = DMRG_1step_2site(left_env, O1, O2, right_env, D, "l2r"; x0=x0)
@@ -227,16 +227,16 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
 
         # Prepare initial guess from current MPS tensors if dimensions match
         x0 = nothing
-        if n <= N - 1  # For n=N, no previous update; for n<=N-1, site n-1 may have been updated by previous step
-            # Check if current tensors have expected outer dimensions
-            Dl_curr, d1, Dmid = size(mps.A[n-1])
-            Dmid2, d2, Dr_curr = size(mps.A[n])
-            if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
-                # Contract current two-site tensor
-                @tensor B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
-                x0 = vec(B_curr)
-            end
+        # if n <= N - 1  # For n=N, no previous update; for n<=N-1, site n-1 may have been updated by previous step
+        # Check if current tensors have expected outer dimensions
+        Dl_curr, d1, Dmid = size(mps.A[n-1])
+        Dmid2, d2, Dr_curr = size(mps.A[n])
+        if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
+            # Contract current two-site tensor
+            @tensor B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
+            x0 = vec(B_curr)
         end
+        # end
 
         # update site n
         Al, Ar, λ, e_trunc = DMRG_1step_2site(left_env, O1, O2, right_env, D, "r2l"; x0=x0)
@@ -287,16 +287,16 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
 
         # Prepare initial guess from current MPS tensors if dimensions match
         x0 = nothing
-        if n <= N - 1  # For n=N, no previous update; for n<=N-1, site n-1 may have been updated by previous step
-            # Check if current tensors have expected outer dimensions
-            Dl_curr, d1, Dmid = size(mps.A[n-1])
-            Dmid2, d2, Dr_curr = size(mps.A[n])
-            if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
-                # Contract current two-site tensor
-                @tensor B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
-                x0 = vec(B_curr)
-            end
+        # if n <= N - 1  # For n=N, no previous update; for n<=N-1, site n-1 may have been updated by previous step
+        # Check if current tensors have expected outer dimensions
+        Dl_curr, d1, Dmid = size(mps.A[n-1])
+        Dmid2, d2, Dr_curr = size(mps.A[n])
+        if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
+            # Contract current two-site tensor
+            @tensor B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
+            x0 = vec(B_curr)
         end
+        # end
 
         # update site n
         Al, Ar, λ, e_trunc = DMRG_1step_2site(left_env, O1, O2, right_env, D, "r2l"; x0=x0)

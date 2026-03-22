@@ -1,6 +1,6 @@
 module DMRGFuncCuda
 
-using MyDMRGPkg, CUDA, cuTENSOR, LinearMaps
+using MyDMRGPkg, CUDA, cuTENSOR
 using Random
 using TensorOperations
 using LinearAlgebra
@@ -77,6 +77,7 @@ end
 
 Matrix-free application of H_eff to vector x, storing result in y.
 H_eff |x> = left_env * O1 * O2 * right_env contracted with x.
+Optimized tensor contraction order to minimize intermediate tensor size.
 """
 function _H_eff_matfree!(y::CuVector{T}, x::CuVector{T},
     left_env::CuArray{T,3}, O1::CuArray{T,4}, O2::CuArray{T,4}, right_env::CuArray{T,3},
@@ -84,29 +85,19 @@ function _H_eff_matfree!(y::CuVector{T}, x::CuVector{T},
 
     X = reshape(x, Dl, d, d, Dr)
 
-    @tensor Y[u, i, o, p] := left_env[u, j, v] * O1[j, k, i, b] * X[v, b, n, m] * O2[k, l, o, n] * right_env[p, l, m]
+    # Optimized contraction order: process from left to right
+    @tensor begin
+        tmp1[u, j, b, n, m] := left_env[u, j, v] * X[v, b, n, m]
+        tmp2[u, k, i, n, m] := tmp1[u, j, b, n, m] * O1[j, k, i, b]
+        tmp3[u, l, i, o, m] := tmp2[u, k, i, n, m] * O2[k, l, o, n]
+        Y[u, i, o, p] := tmp3[u, l, i, o, m] * right_env[p, l, m]
+    end
 
     copyto!(y, vec(Y))
     return y
 end
 
-"""
-    _create_H_eff_map(left_env, O1, O2, right_env, Dl, d, Dr)
 
-Create a LinearMap for matrix-free H_eff operator.
-"""
-function _create_H_eff_map(left_env::CuArray{T,3}, O1::CuArray{T,4}, O2::CuArray{T,4}, right_env::CuArray{T,3},
-    Dl::Int, d::Int, Dr::Int) where T
-
-    dim = Dl * d * d * Dr
-
-    function matvec!(y, x)
-        _H_eff_matfree!(y, x, left_env, O1, O2, right_env, Dl, d, Dr)
-        return y
-    end
-
-    return LinearMap{T}(matvec!, dim; issymmetric=true, isposdef=false)
-end
 
 """
     DMRG_1step_2site_cuda(left_env, O1, O2, right_env, D::Int, direction::String; x0=nothing)
@@ -123,16 +114,21 @@ function DMRG_1step_2site_cuda(left_env::CuArray{T,3}, O1::CuArray{T,4}, O2::CuA
     Dr = size(right_env, 3)
     d = size(O1, 4)
 
-    H_map = _create_H_eff_map(left_env, O1, O2, right_env, Dl, d, Dr)
-
     dim = Dl * d * d * Dr
 
+    # Create function for H_eff application instead of LinearMap
+    function H_action(x::AbstractVector)
+        y = similar(x)
+        _H_eff_matfree!(y, x, left_env, O1, O2, right_env, Dl, d, Dr)
+        return y
+    end
+
     if x0 !== nothing
-        λs, vecs, _ = eigsolve(H_map, x0, 1, :SR, ishermitian=true, tol=1e-12)
+        λs, vecs, _ = eigsolve(H_action, x0, 1, :SR, ishermitian=true, tol=1e-12)
     else
         x0_rand = CUDA.rand(T, dim) .- T(0.5)
         x0_rand ./= norm(x0_rand)
-        λs, vecs, _ = eigsolve(H_map, x0_rand, 1, :SR, ishermitian=true, tol=1e-10)
+        λs, vecs, _ = eigsolve(H_action, x0_rand, 1, :SR, ishermitian=true, tol=1e-10)
     end
 
     λ = real(λs[1])
@@ -197,14 +193,14 @@ function l2r_DMRG_2site_cuda!(mps::CuMPS{T}, mpo::CuMPO{T},
         Dr = size(right_env, 3)
 
         x0 = nothing
-        if n >= 2
-            Dl_curr, d1, Dmid = size(mps.A[n])
-            Dmid2, d2, Dr_curr = size(mps.A[n+1])
-            if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
-                @tensor B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
-                x0 = vec(B_curr)
-            end
+        # if n >= 2
+        Dl_curr, d1, Dmid = size(mps.A[n])
+        Dmid2, d2, Dr_curr = size(mps.A[n+1])
+        if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
+            @tensor B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
+            x0 = vec(B_curr)
         end
+        # end
 
         Al, Ar, λ, e_trunc = DMRG_1step_2site_cuda(left_env, O1, O2, right_env, D, "l2r"; x0=x0)
         show_progress && set_description(iter, string(@sprintf("λ: %.6f", λ)))
@@ -245,14 +241,14 @@ function l2r_DMRG_2site_cuda!(mps::CuMPS{T}, mpo::CuMPO{T},
         Dr = size(right_env, 3)
 
         x0 = nothing
-        if n >= 2
-            Dl_curr, d1, Dmid = size(mps.A[n])
-            Dmid2, d2, Dr_curr = size(mps.A[n+1])
-            if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
-                @tensor B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
-                x0 = vec(B_curr)
-            end
+        # if n >= 2
+        Dl_curr, d1, Dmid = size(mps.A[n])
+        Dmid2, d2, Dr_curr = size(mps.A[n+1])
+        if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
+            @tensor B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
+            x0 = vec(B_curr)
         end
+        # end
 
         Al, Ar, λ, e_trunc = DMRG_1step_2site_cuda(left_env, O1, O2, right_env, D, "l2r"; x0=x0)
         show_progress && set_description(iter, string(@sprintf("λ: %.6f", λ)))
@@ -298,14 +294,14 @@ function r2l_DMRG_2site_cuda!(mps::CuMPS{T}, mpo::CuMPO{T},
         Dr = size(right_env, 3)
 
         x0 = nothing
-        if n <= N - 1
-            Dl_curr, d1, Dmid = size(mps.A[n-1])
-            Dmid2, d2, Dr_curr = size(mps.A[n])
-            if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
-                @tensor B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
-                x0 = vec(B_curr)
-            end
+        # if n <= N - 1
+        Dl_curr, d1, Dmid = size(mps.A[n-1])
+        Dmid2, d2, Dr_curr = size(mps.A[n])
+        if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
+            @tensor B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
+            x0 = vec(B_curr)
         end
+        # end
 
         Al, Ar, λ, e_trunc = DMRG_1step_2site_cuda(left_env, O1, O2, right_env, D, "r2l"; x0=x0)
         show_progress && set_description(iter, string(@sprintf("λ: %.6f", λ)))
@@ -347,14 +343,14 @@ function r2l_DMRG_2site_cuda!(mps::CuMPS{T}, mpo::CuMPO{T},
         Dr = size(right_env, 3)
 
         x0 = nothing
-        if n <= N - 1
-            Dl_curr, d1, Dmid = size(mps.A[n-1])
-            Dmid2, d2, Dr_curr = size(mps.A[n])
-            if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
-                @tensor B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
-                x0 = vec(B_curr)
-            end
+        # if n <= N - 1
+        Dl_curr, d1, Dmid = size(mps.A[n-1])
+        Dmid2, d2, Dr_curr = size(mps.A[n])
+        if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
+            @tensor B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
+            x0 = vec(B_curr)
         end
+        # end
 
         Al, Ar, λ, e_trunc = DMRG_1step_2site_cuda(left_env, O1, O2, right_env, D, "r2l"; x0=x0)
         show_progress && set_description(iter, string(@sprintf("λ: %.6f", λ)))

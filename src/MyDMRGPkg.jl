@@ -4,6 +4,7 @@
 using Random
 using TensorOperations
 using LinearAlgebra
+using SpecialFunctions
 using KrylovKit
 using ProgressBars
 using Printf
