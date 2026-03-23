@@ -65,7 +65,7 @@ function DMRG_1step_2site(left_env::Array{T,3}, O1::Array{T2,4}, O2::Array{T2,4}
         λs, vecs, _ = eigsolve(H_action, x0, 1, :SR, ishermitian=true)
     else
         x0 = rand(T, Dl * d * d * Dr)
-        λs, vecs, _ = eigsolve(H_action, x0, 1, :SR, ishermitian=true)
+        λs, vecs, _ = eigsolve(H_action, x0, 1, :SR, ishermitian=true, maxiter=50)
     end
     λ = real(λs[1])
 

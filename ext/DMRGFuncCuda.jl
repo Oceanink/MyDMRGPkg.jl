@@ -123,7 +123,7 @@ function DMRG_1step_2site_cuda(left_env::CuArray{T,3}, O1::CuArray{T,4}, O2::CuA
     else
         x0_rand = CUDA.rand(T, dim) .- T(0.5)
         x0_rand ./= norm(x0_rand)
-        λs, vecs, _ = eigsolve(H_action, x0_rand, 1, :SR, ishermitian=true, tol=1e-10)
+        λs, vecs, _ = eigsolve(H_action, x0_rand, 1, :SR, ishermitian=true, tol=1e-10, maxiter=50)
     end
 
     λ = real(λs[1])
