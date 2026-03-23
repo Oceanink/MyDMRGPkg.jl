@@ -10,7 +10,7 @@ function l2r_DMRG_prep_2site(mps::MPS{T}, mpo::MPO) where {T}
         On = mpo.O[n]
         An = mps.A[n]
         right_env = right_envs[n-1]
-        @tensor right_env[u, y, j] := right_env[o, p, l] * conj(An)[u, i, o] * On[y, p, i, k] * An[j, k, l]
+        @tensoropt right_env[u, y, j] := right_env[o, p, l] * conj(An)[u, i, o] * On[y, p, i, k] * An[j, k, l]
         right_envs[n-2] = right_env
     end
     return right_envs
@@ -124,7 +124,7 @@ function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, lef
         Dmid2, d2, Dr_curr = size(mps.A[n+1])
         if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
             # Contract current two-site tensor
-            @tensor B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
+            @tensoropt B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
             x0 = vec(B_curr)
         end
         # end
@@ -141,7 +141,7 @@ function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, lef
 
         # Update left environment
         if n <= N - 2
-            @tensor left_env_new[o, p, l] := left_env[u, y, j] * conj(Al)[u, i, o] * O1[y, p, i, k] * Al[j, k, l]
+            @tensoropt left_env_new[o, p, l] := left_env[u, y, j] * conj(Al)[u, i, o] * O1[y, p, i, k] * Al[j, k, l]
             left_envs[n+1] = left_env_new
         end
     end
@@ -180,7 +180,7 @@ function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, lef
         Dmid2, d2, Dr_curr = size(mps.A[n+1])
         if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
             # Contract current two-site tensor
-            @tensor B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
+            @tensoropt B_curr[v, b, n_idx, m] := mps.A[n][v, b, k] * mps.A[n+1][k, n_idx, m]
             x0 = vec(B_curr)
         end
         # end
@@ -196,7 +196,7 @@ function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, lef
 
         # Update left environment
         if n <= N - 2
-            @tensor left_env_new[o, p, l] := left_env[u, y, j] * conj(Al)[u, i, o] * O1[y, p, i, k] * Al[j, k, l]
+            @tensoropt left_env_new[o, p, l] := left_env[u, y, j] * conj(Al)[u, i, o] * O1[y, p, i, k] * Al[j, k, l]
             left_envs[n+1] = left_env_new
         end
     end
@@ -239,7 +239,7 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
         Dmid2, d2, Dr_curr = size(mps.A[n])
         if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
             # Contract current two-site tensor
-            @tensor B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
+            @tensoropt B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
             x0 = vec(B_curr)
         end
         # end
@@ -256,7 +256,7 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
 
         # Update right environment
         if n >= 3
-            @tensor right_env_new[u, y, j] := right_env[o, p, l] * conj(Ar)[u, i, o] * O2[y, p, i, k] * Ar[j, k, l]
+            @tensoropt right_env_new[u, y, j] := right_env[o, p, l] * conj(Ar)[u, i, o] * O2[y, p, i, k] * Ar[j, k, l]
             right_envs[n-2] = right_env_new
         end
     end
@@ -299,7 +299,7 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
         Dmid2, d2, Dr_curr = size(mps.A[n])
         if Dl_curr == Dl && Dr_curr == Dr && d1 == d && d2 == d && Dmid == Dmid2
             # Contract current two-site tensor
-            @tensor B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
+            @tensoropt B_curr[v, b, n_idx, m] := mps.A[n-1][v, b, k] * mps.A[n][k, n_idx, m]
             x0 = vec(B_curr)
         end
         # end
@@ -316,7 +316,7 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
 
         # Update right environment
         if n >= 3
-            @tensor right_env_new[u, y, j] := right_env[o, p, l] * conj(Ar)[u, i, o] * O2[y, p, i, k] * Ar[j, k, l]
+            @tensoropt right_env_new[u, y, j] := right_env[o, p, l] * conj(Ar)[u, i, o] * O2[y, p, i, k] * Ar[j, k, l]
             right_envs[n-2] = right_env_new
         end
     end

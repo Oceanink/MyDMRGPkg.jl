@@ -66,7 +66,7 @@ function l2r_DMRG_prep_2site_cuda(mps::CuMPS{T}, mpo::CuMPO{T}) where T
         On = mpo.O[n]
         An = mps.A[n]
         right_env = right_envs[n-1]
-        @tensor right_env[u, y, j] := right_env[o, p, l] * conj(An)[u, i, o] * On[y, p, i, k] * An[j, k, l]
+        @tensoropt right_env[u, y, j] := right_env[o, p, l] * conj(An)[u, i, o] * On[y, p, i, k] * An[j, k, l]
         right_envs[n-2] = right_env
     end
     return right_envs
@@ -125,6 +125,8 @@ function DMRG_1step_2site_cuda(left_env::CuArray{T,3}, O1::CuArray{T,4}, O2::CuA
         x0_rand ./= norm(x0_rand)
         λs, vecs, _ = eigsolve(H_action, x0_rand, 1, :SR, ishermitian=true, tol=1e-10, maxiter=50)
     end
+
+    _maybe_gc_collect(show_vram=false)
 
     λ = real(λs[1])
 
@@ -206,7 +208,7 @@ function l2r_DMRG_2site_cuda!(mps::CuMPS{T}, mpo::CuMPO{T},
         trunc_errors[n] = e_trunc
 
         if n <= N - 2
-            @tensor left_env_new[o, p, l] := left_env[u, y, j] * conj(Al)[u, i, o] * O1[y, p, i, k] * Al[j, k, l]
+            @tensoropt left_env_new[o, p, l] := left_env[u, y, j] * conj(Al)[u, i, o] * O1[y, p, i, k] * Al[j, k, l]
             left_envs[n+1] = left_env_new
         end
     end
@@ -253,7 +255,7 @@ function l2r_DMRG_2site_cuda!(mps::CuMPS{T}, mpo::CuMPO{T},
         λ_final = λ
 
         if n <= N - 2
-            @tensor left_env_new[o, p, l] := left_env[u, y, j] * conj(Al)[u, i, o] * O1[y, p, i, k] * Al[j, k, l]
+            @tensoropt left_env_new[o, p, l] := left_env[u, y, j] * conj(Al)[u, i, o] * O1[y, p, i, k] * Al[j, k, l]
             left_envs[n+1] = left_env_new
         end
     end
@@ -307,7 +309,7 @@ function r2l_DMRG_2site_cuda!(mps::CuMPS{T}, mpo::CuMPO{T},
         trunc_errors[N+1-n] = e_trunc
 
         if n >= 3
-            @tensor right_env_new[u, y, j] := right_env[o, p, l] * conj(Ar)[u, i, o] * O2[y, p, i, k] * Ar[j, k, l]
+            @tensoropt right_env_new[u, y, j] := right_env[o, p, l] * conj(Ar)[u, i, o] * O2[y, p, i, k] * Ar[j, k, l]
             right_envs[n-2] = right_env_new
         end
     end
@@ -356,7 +358,7 @@ function r2l_DMRG_2site_cuda!(mps::CuMPS{T}, mpo::CuMPO{T},
         trunc_err_final = e_trunc
 
         if n >= 3
-            @tensor right_env_new[u, y, j] := right_env[o, p, l] * conj(Ar)[u, i, o] * O2[y, p, i, k] * Ar[j, k, l]
+            @tensoropt right_env_new[u, y, j] := right_env[o, p, l] * conj(Ar)[u, i, o] * O2[y, p, i, k] * Ar[j, k, l]
             right_envs[n-2] = right_env_new
         end
     end
