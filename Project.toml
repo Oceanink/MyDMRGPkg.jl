@@ -14,17 +14,15 @@ TensorOperations = "6aa20fa7-93e2-5fca-9bc0-fbd0db3c71a2"
 
 [weakdeps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
-LinearMaps = "7a12625a-238d-50fd-b39a-03d52299707e"
 cuTENSOR = "011b41b2-24ef-40a8-b3eb-fa098493e9e1"
 
 [extensions]
-DMRGFuncCuda = ["CUDA","cuTENSOR","LinearMaps"]
+DMRGFuncCuda = ["CUDA","cuTENSOR"]
 
 [compat]
 CUDA = "5.9"
 KrylovKit = "0.10.2"
 LinearAlgebra = "1.12.0"
-LinearMaps = "3.11.4"
 Printf = "1.11.0"
 ProgressBars = "1.5.1"
 Random = "1.11.0"
