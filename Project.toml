@@ -18,6 +18,7 @@ cuTENSOR = "011b41b2-24ef-40a8-b3eb-fa098493e9e1"
 
 [extensions]
 DMRGFuncCuda = ["CUDA","cuTENSOR"]
+DMRGFuncHybrid = ["CUDA","cuTENSOR"]
 
 [compat]
 CUDA = "5.9"

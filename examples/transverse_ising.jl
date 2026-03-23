@@ -1,6 +1,5 @@
-using MyDMRGPkg, CUDA, cuTENSOR, LinearMaps
+using MyDMRGPkg, CUDA, cuTENSOR
 using MyDMRGPkg: cu, cpu
-using LinearAlgebra
 using Plots
 using JLD2
 
@@ -18,20 +17,20 @@ using JLD2
 
 N = 60 # number of sites
 d = 2 # physical dim
-D = 20 # bond dim
+D = 30 # bond dim
 J = 1
 h = 0.5
-max_loops = 10
+max_loops = 3
 
 mpo = transverse_ising_MPO(N, J, h)
-mpo_gpu = cu(mpo)
+# mpo_gpu = cu(mpo)
 mps = MPS{Float64}(N, d, D)
 r2l_LQ!(mps)
-mps_gpu = cu(mps);
-λs, trunc_errors = DMRG_loop_2site!(mps_gpu, mpo_gpu, max_loops, -1);
-# λs, trunc_errors = DMRG_loop_2site!(mps, mpo, max_loops, -1);
+# mps_gpu = cu(mps);
+# λs, trunc_errors = DMRG_loop_2site!(mps_gpu, mpo_gpu, max_loops, -1; store_all=false, show_vram=false);
+λs, trunc_errors = DMRG_loop_2site!(mps, mpo, max_loops, -1; use_gpu=true);
 
-mps = cpu(mps_gpu)
+# mps = cpu(mps_gpu)
 co = crosscap_overlap(mps)
 println("N=$N, ", "D=$D, ", "h=$h, ", abs2(co))
 
