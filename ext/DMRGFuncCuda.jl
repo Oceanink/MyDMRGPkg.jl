@@ -1,8 +1,8 @@
 module DMRGFuncCuda
 
 using MyDMRGPkg, CUDA, cuTENSOR
-using Random
 using TensorOperations
+using Random
 using LinearAlgebra
 using KrylovKit
 using ProgressBars
@@ -126,7 +126,7 @@ function DMRG_1step_2site_cuda(left_env::CuArray{T,3}, O1::CuArray{T,4}, O2::CuA
         λs, vecs, _ = eigsolve(H_action, x0_rand, 1, :SR, ishermitian=true, tol=1e-10, maxiter=50)
     end
 
-    _maybe_gc_collect(show_vram=false)
+    _maybe_gc_collect(false)
 
     λ = real(λs[1])
 

@@ -26,46 +26,36 @@ function DMRG_1step_2site(left_env::Array{T,3}, O1::Array{T2,4}, O2::Array{T2,4}
     Dl = size(left_env, 3)
     Dr = size(right_env, 3)
     d = size(O1, 4)
+    D1 = size(left_env, 2)
+    D2 = size(O1, 2)
+    D3 = size(O2, 2)
 
-    # Preallocate temporaries for tensor contractions
-    dim_u = size(left_env, 1)
-    dim_j = size(left_env, 2)
-    dim_k = size(O1, 2)
-    dim_l = size(O2, 2)
 
-    tmp1 = Array{T}(undef, dim_u, dim_j, d, d, Dr)
-    tmp2 = Array{T}(undef, dim_u, dim_k, d, d, Dr)
-    tmp3 = Array{T}(undef, dim_u, dim_l, d, d, Dr)
+    tmp1 = Array{T}(undef, Dl, D1, d, d, Dr)
+    tmp2 = Array{T}(undef, Dl, D2, d, d, Dr)
+    tmp3 = Array{T}(undef, Dl, D3, d, d, Dr)
+    y_tmp = Array{T}(undef, Dl, d, d, Dr)
 
-    function apply_H_eff(x_vec::AbstractVector,
-        tmp1, tmp2, tmp3, left_env, O1, O2, right_env)
-        dim_v = size(left_env, 3)
-        dim_b = size(O1, 4)
-        dim_n = size(O2, 4)
-        dim_m = size(right_env, 3)
-
-        x_tensor = reshape(x_vec, dim_v, dim_b, dim_n, dim_m)
+    function apply_H_eff(x_vec::Vector{T})
+        x_tensor = reshape(x_vec, Dl, d, d, Dr)
 
         @tensor begin
             tmp1[u, j, b, n, m] = left_env[u, j, v] * x_tensor[v, b, n, m]
             tmp2[u, k, i, n, m] = tmp1[u, j, b, n, m] * O1[j, k, i, b]
             tmp3[u, l, i, o, m] = tmp2[u, k, i, n, m] * O2[k, l, o, n]
-            y_tensor[u, i, o, p] := tmp3[u, l, i, o, m] * right_env[p, l, m]
+            y_tmp[u, i, o, p] = tmp3[u, l, i, o, m] * right_env[p, l, m]
         end
 
-        return vec(y_tensor)
+        return vec(y_tmp)
     end
-
-    H_action = x -> apply_H_eff(x, tmp1, tmp2, tmp3, left_env, O1, O2, right_env)
-
     # Find only the smallest eigenvalue using iterative method
     # :SR means "smallest real" eigenvalue
     # H_eff_mat = reshape(H_eff, dim1, dim2)
     if x0 !== nothing
-        λs, vecs, _ = eigsolve(H_action, x0, 1, :SR, ishermitian=true)
+        λs, vecs, _ = eigsolve(apply_H_eff, x0, 1, :SR)
     else
         x0 = rand(T, Dl * d * d * Dr)
-        λs, vecs, _ = eigsolve(H_action, x0, 1, :SR, ishermitian=true, maxiter=50)
+        λs, vecs, _ = eigsolve(apply_H_eff, x0, 1, :SR, ishermitian=true, maxiter=50)
     end
     λ = real(λs[1])
 
@@ -157,6 +147,7 @@ function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, lef
     """
     N = mps.N
     λ_final = 0.0
+    e_trunc_max = 0.0
 
     sweep_range = 1:N-1
     iter = show_progress ? ProgressBar(sweep_range) : sweep_range
@@ -193,6 +184,9 @@ function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, lef
         mps.A[n] = Al
         mps.A[n+1] = Ar
         λ_final = λ
+        if e_trunc > e_trunc_max
+            e_trunc_max = e_trunc
+        end
 
         # Update left environment
         if n <= N - 2
@@ -201,7 +195,7 @@ function l2r_DMRG_2site!(mps::MPS, mpo::MPO, right_envs::Vector{Array{T,3}}, lef
         end
     end
 
-    return λ_final
+    return λ_final, e_trunc_max
 end
 
 function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
@@ -275,7 +269,7 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
     """
     N = mps.N
     λ_final = 0.0
-    trunc_err_final = 0.0
+    e_trunc_max = 0.0
 
     sweep_range = N:-1:2
     iter = show_progress ? ProgressBar(sweep_range) : sweep_range
@@ -312,7 +306,9 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
         mps.A[n-1] = Al
         mps.A[n] = Ar
         λ_final = λ
-        trunc_err_final = e_trunc
+        if e_trunc > e_trunc_max
+            e_trunc_max = e_trunc
+        end
 
         # Update right environment
         if n >= 3
@@ -321,7 +317,7 @@ function r2l_DMRG_2site!(mps::MPS, mpo::MPO,
         end
     end
 
-    return λ_final, trunc_err_final
+    return λ_final, e_trunc_max
 end
 
 
@@ -349,24 +345,14 @@ function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Real;
         max_size = times * 2 * (N - 1)
         λs_all = Vector{Float64}(undef, max_size)
         trunc_errs_all = Vector{Float64}(undef, max_size)
-    else
-        λs_all = Float64[]
-        trunc_errs_all = Float64[]
+        λs = Vector{Float64}(undef, N - 1)
+        trunc_errs = Vector{Float64}(undef, N - 1)
     end
 
     # Variables to track final values (needed when store_all=false)
     λ_lr = 0.0
     λ_rl = 0.0
-    final_trunc_err = 0.0
-
-    if store_all
-        λs = Vector{Float64}(undef, N - 1)
-        trunc_errs = Vector{Float64}(undef, N - 1)
-    else
-        # Dummy arrays when not storing - inner functions won't use them
-        λs = Float64[]
-        trunc_errs = Float64[]
-    end
+    e_trunc_max = 0.0
 
     idx = 0 # index of last stored energy
     i = 0 # index of loops
@@ -382,7 +368,10 @@ function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Real;
             idx += N - 1
             λ_lr = λs[N-1]
         else
-            λ_lr = l2r_DMRG_2site!(mps, mpo, right_envs, left_envs; show_progress=show_progress)
+            λ_lr, e_trunc_max_lr = l2r_DMRG_2site!(mps, mpo, right_envs, left_envs; show_progress=show_progress)
+            if e_trunc_max_lr > e_trunc_max
+                e_trunc_max = e_trunc_max_lr
+            end
         end
 
         # Right-to-left sweep
@@ -394,7 +383,11 @@ function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Real;
             idx += N - 1
             λ_rl = λs[N-1]
         else
-            λ_rl, final_trunc_err = r2l_DMRG_2site!(mps, mpo, left_envs, right_envs; show_progress=show_progress)
+            λ_rl, e_trunc_max_rl = r2l_DMRG_2site!(mps, mpo, left_envs, right_envs; show_progress=show_progress)
+            if e_trunc_max_rl > e_trunc_max
+                e_trunc_max = e_trunc_max_rl
+            end
+
         end
 
         # Check convergence
@@ -409,6 +402,6 @@ function DMRG_loop_2site!(mps::MPS{T}, mpo::MPO, times::Int, threshold::Real;
         return λs_all, trunc_errs_all
     else
         # Return only final values
-        return [λ_rl], [final_trunc_err]
+        return [λ_rl], [e_trunc_max]
     end
 end

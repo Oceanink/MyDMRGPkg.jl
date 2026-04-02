@@ -2,6 +2,7 @@ module DMRGFuncHybrid
 
 using MyDMRGPkg, CUDA
 using Random
+using cuTENSOR
 using TensorOperations
 using LinearAlgebra
 using KrylovKit
@@ -50,8 +51,9 @@ function DMRG_1step_2site_hybrid(left_env::Array{T,3}, O1::Array{T2,4}, O2::Arra
     tmp1 = CuArray{T}(undef, dim_u, dim_j, d, d, Dr)
     tmp2 = CuArray{T}(undef, dim_u, dim_k, d, d, Dr)
     tmp3 = CuArray{T}(undef, dim_u, dim_l, d, d, Dr)
+    y_tmp = CuArray{T}(undef, dim_u, size(O1, 4), size(O2, 4), size(right_env, 3))
 
-    function apply_H_eff(x_vec::CuVector{T}, tmp1, tmp2, tmp3, left_env, O1, O2, right_env) where T
+    function apply_H_eff(x_vec::CuVector{T}, y_tmp, tmp1, tmp2, tmp3, left_env, O1, O2, right_env) where T
         dim_v = size(left_env, 3)
         dim_b = size(O1, 4)
         dim_n = size(O2, 4)
@@ -63,15 +65,15 @@ function DMRG_1step_2site_hybrid(left_env::Array{T,3}, O1::Array{T2,4}, O2::Arra
             tmp1[u, j, b, n, m] = left_env[u, j, v] * x_tensor[v, b, n, m]
             tmp2[u, k, i, n, m] = tmp1[u, j, b, n, m] * O1[j, k, i, b]
             tmp3[u, l, i, o, m] = tmp2[u, k, i, n, m] * O2[k, l, o, n]
-            y_tensor[u, i, o, p] := tmp3[u, l, i, o, m] * right_env[p, l, m]
+            y_tmp[u, i, o, p] = tmp3[u, l, i, o, m] * right_env[p, l, m]
         end
 
-        return vec(y_tensor)
+        return vec(y_tmp)
     end
 
     dim = Dl * d * d * Dr
 
-    H_action = x -> apply_H_eff(x, tmp1, tmp2, tmp3, left_env_gpu, O1_gpu, O2_gpu, right_env_gpu)
+    H_action = x -> apply_H_eff(x, y_tmp, tmp1, tmp2, tmp3, left_env_gpu, O1_gpu, O2_gpu, right_env_gpu)
 
     # Transfer initial guess to GPU if provided
     if x0 !== nothing
