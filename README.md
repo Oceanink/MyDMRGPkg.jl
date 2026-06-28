@@ -29,8 +29,6 @@ Pkg.add(url="https://github.com/Oceanink/MyDMRGPkg.jl")
 
 ## Quick Start (GPU Two-Site DMRG)
 
-For large systems, use GPU acceleration with CUDA:
-
 ```julia
 using MyDMRGPkg
 using MyDMRGPkg:cu, cpu
